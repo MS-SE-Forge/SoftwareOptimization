@@ -71,7 +71,6 @@ describe('AuthService', () => {
       const token = 'token';
       mockJwtService.sign.mockReturnValue(token);
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = service.login(user as any);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         username: 'test@t.com',

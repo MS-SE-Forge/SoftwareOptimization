@@ -3,6 +3,10 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Prisma, User } from '@prisma/client';
 import { AuthService } from './auth.service';
 
+interface RequestWithUser extends Request {
+  user?: any;
+}
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -12,11 +16,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User successfully logged in.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('login')
-  login(@Request() req: any, @Body() body: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const user = req.user || body;
-
-    return this.authService.login(user as Omit<User, 'password'>);
+  login(@Request() req: RequestWithUser, @Body() body: any) {
+    return this.authService.login((req.user || body) as Omit<User, 'password'>);
   }
 
   @ApiOperation({ summary: 'Register new user' })

@@ -30,7 +30,7 @@ describe('AuthController', () => {
       const token = { access_token: 'token' };
       mockAuthService.login.mockReturnValue(token);
 
-      expect(controller.login(req, {})).toEqual(token);
+      expect(controller.login(req as any, {})).toEqual(token);
       expect(mockAuthService.login).toHaveBeenCalledWith(user);
     });
 
@@ -40,7 +40,7 @@ describe('AuthController', () => {
       const token = { access_token: 'token' };
       mockAuthService.login.mockReturnValue(token);
 
-      expect(controller.login(req, body)).toEqual(token);
+      expect(controller.login(req as any, body)).toEqual(token);
       expect(mockAuthService.login).toHaveBeenCalledWith(body);
     });
   });

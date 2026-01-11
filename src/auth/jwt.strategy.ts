@@ -1,7 +1,14 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import { jwtConstants } from './constants'; // Need to create constants
+import { jwtConstants } from './constants';
+import { Role } from '@prisma/client';
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  role: Role;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,9 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async validate(payload: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  validate(payload: JwtPayload) {
     return { userId: payload.sub, username: payload.email, role: payload.role };
   }
 }
