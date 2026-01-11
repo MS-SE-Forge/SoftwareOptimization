@@ -31,7 +31,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 201, description: 'User successfully logged out.' })
   logout() {
-    // In a statless JWT setup, logout is handled client-side by deleting the token.
+    // In a stateless JWT setup, logout is handled client-side by deleting the token.
     // This endpoint can be used for server-side blacklist or logging.
     return { message: 'Logout successful' };
   }
