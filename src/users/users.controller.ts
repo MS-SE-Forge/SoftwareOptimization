@@ -6,13 +6,21 @@ import {
   Param,
   Patch,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { Prisma } from '@prisma/client';
-// import { AuthGuard } from '@nestjs/passport'; // To be implemented
 
 @ApiTags('users')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'))
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
