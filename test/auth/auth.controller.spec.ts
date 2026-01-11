@@ -24,23 +24,23 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should return access token', async () => {
+    it('should return access token', () => {
       const user = { username: 'test', id: '1' };
       const req = { user };
       const token = { access_token: 'token' };
-      mockAuthService.login.mockResolvedValue(token);
+      mockAuthService.login.mockReturnValue(token);
 
-      expect(await controller.login(req, {})).toEqual(token);
+      expect(controller.login(req, {})).toEqual(token);
       expect(mockAuthService.login).toHaveBeenCalledWith(user);
     });
 
-    it('should use body if req.user is undefined', async () => {
+    it('should use body if req.user is undefined', () => {
       const body = { username: 'test', id: '1' };
       const req = {};
       const token = { access_token: 'token' };
-      mockAuthService.login.mockResolvedValue(token);
+      mockAuthService.login.mockReturnValue(token);
 
-      expect(await controller.login(req, body)).toEqual(token);
+      expect(controller.login(req, body)).toEqual(token);
       expect(mockAuthService.login).toHaveBeenCalledWith(body);
     });
   });
