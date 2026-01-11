@@ -23,7 +23,7 @@ describe('UsersController (e2e)', () => {
 
   const uniqueId = Date.now();
   const newUser = {
-    email: `newuser_${uniqueId}@test.com`,
+    email: `testuser_${uniqueId}@test.com`,
     password: 'password123',
     name: 'Test User',
   };
