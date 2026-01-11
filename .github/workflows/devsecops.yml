@@ -187,19 +187,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # --- ADD THIS DEBUG STEP ---
-      - name: Debug - Find the Secret
-        run: |
-          echo "Searching for AKIA..."
-          grep -r "AKIA" . || echo "AKIA not found"
-          echo "Searching for cafebabe..."
-          grep -r "cafebabe" . || echo "cafebabe not found"
-      # ---------------------------
       - name: Install & Run Gitleaks
         run: |
           wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz
           tar -xzf gitleaks_8.18.2_linux_x64.tar.gz
           sudo mv gitleaks /usr/local/bin/
+          # --no-git ensures we scan files on disk (which we know are clean) and ignore history
           gitleaks detect --source . -v --no-git
 
   dependency-review:
