@@ -4,8 +4,6 @@ env:
   NODE_VERSION: 20.19.5
   NODE_ENV: github
   ARTIFACT_NAME: devsecops-sample
-  # Postgres for E2E
-  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
 
 on:
   push:
