@@ -13,9 +13,8 @@ For a detailed breakdown of the pipeline architecture, see [implementation.md](.
 
 - **Node.js**: v20 or higher
 - **pnpm**: v9 (`npm i -g pnpm`)
-- **Docker**: For containerization and running local verification
-- **PostgreSQL**: For local development (or use Docker Compose)
-- **MongoDB**: For End-to-End tests
+- **Docker**: For containerization and running services
+- **MongoDB**: The application uses MongoDB as the database provider
 
 ## Project Setup
 
@@ -35,6 +34,21 @@ $ pnpm run start:dev
 
 # production mode
 $ pnpm run start:prod
+```
+
+## Running with Docker
+
+You can run the application fully containerized or just the database.
+
+### Start Database (MongoDB)
+```bash
+$ docker-compose up -d mongo
+```
+
+### Build & Run Application
+```bash
+$ docker build -t software-optimization-api .
+$ docker run -p 3000:3000 --env-file .env software-optimization-api
 ```
 
 ## Running Tests
