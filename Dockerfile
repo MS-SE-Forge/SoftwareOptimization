@@ -15,7 +15,8 @@ RUN pnpm run prisma:generate
 RUN pnpm run build
 
 # Stage 2: Production Runtime
-FROM gcr.io/distroless/nodejs20-debian12
+# Use SHA256 digest for immutability (Fixes CKV_DOCKER_7)
+FROM gcr.io/distroless/nodejs20-debian12@sha256:a260a04dbb228d6ea1aadf01f74f904cd6e7fa19c66ae8dc6789c032e468336e
 
 WORKDIR /app
 
@@ -24,5 +25,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
+
+# Run as non-root user (Fixes CKV_DOCKER_3)
+USER nonroot
 
 CMD ["dist/main.js"]
