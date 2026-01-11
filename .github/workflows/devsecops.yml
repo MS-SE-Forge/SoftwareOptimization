@@ -4,8 +4,6 @@ env:
   NODE_VERSION: 20.19.5
   NODE_ENV: github
   ARTIFACT_NAME: devsecops-sample
-  # Postgres for E2E
-  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
 
 on:
   push:
@@ -191,9 +189,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install & Run Gitleaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz
+          tar -xzf gitleaks_8.18.2_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks detect --source . -v --no-git
 
   dependency-review:
     name: Dependency Review (PR only)
@@ -349,3 +350,21 @@ jobs:
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: 'DevSecOps Pipeline Finished'
           SLACK_TITLE: Pipeline Status
+
+  ci-success:
+    name: CI Pipeline Success
+    needs: 
+      - lint
+      - spellcheck
+      - check-coverage
+      - e2e
+      - secrets-scan
+      - codeql
+      - semgrep
+      - deps-audit
+      - dast
+      - iac-scan
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - run: echo "All critical checks passed"
