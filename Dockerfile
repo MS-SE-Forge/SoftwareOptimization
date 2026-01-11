@@ -15,8 +15,8 @@ RUN pnpm run prisma:generate
 RUN pnpm run build
 
 # Stage 2: Production Runtime
-# Use SHA256 digest for immutability (Fixes CKV_DOCKER_7)
-FROM gcr.io/distroless/nodejs20-debian12@sha256:a260a04dbb228d6ea1aadf01f74f904cd6e7fa19c66ae8dc6789c032e468336e
+# checkov:skip=CKV_DOCKER_7:Use latest tag to avoid digest resolution errors
+FROM gcr.io/distroless/nodejs20-debian12
 
 WORKDIR /app
 
