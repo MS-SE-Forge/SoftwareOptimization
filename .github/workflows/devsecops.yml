@@ -137,18 +137,6 @@ jobs:
     name: Merge & Check Coverage
     needs: unit-tests
     runs-on: ubuntu-latest
-    services:
-      mongodb:
-        image: mongo:4.4
-        options: >-
-          --replSet rs0
-          --bind_ip_all
-          --health-cmd "mongo --eval 'db.runCommand(\"ping\").ok'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-        ports:
-          - 27017:27017
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -158,10 +146,15 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-      
+
+      - name: Start MongoDB
+        run: |
+          docker run -d --name mongodb -p 27017:27017 mongo:4.4 --replSet rs0 --bind_ip_all
+          sleep 10 # Wait for startup
+
       - name: Configure MongoDB Replica Set
         run: |
-          docker exec ${{ job.services.mongodb.id }} mongo --eval 'try { rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27017"}]}) } catch(e) { rs.status().ok }'
+          docker exec mongodb mongo --eval 'try { rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27017"}]}) } catch(e) { rs.status().ok }'
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma:generate
@@ -180,18 +173,6 @@ jobs:
     name: E2E Tests (MongoDB)
     needs: install-deps
     runs-on: ubuntu-latest
-    services:
-      mongo:
-        image: mongo:4.4
-        options: >-
-          --replSet rs0
-          --bind_ip_all
-          --health-cmd "mongo --eval 'db.runCommand(\"ping\").ok'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-        ports:
-          - 27017:27017
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -202,9 +183,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: Start MongoDB
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:4.4 --replSet rs0 --bind_ip_all
+          sleep 10 # Wait for startup
+
       - name: Configure MongoDB Replica Set
         run: |
-          docker exec ${{ job.services.mongo.id }} mongo --eval 'try { rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27017"}]}) } catch(e) { rs.status().ok }'
+          docker exec mongo mongo --eval 'try { rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27017"}]}) } catch(e) { rs.status().ok }'
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma:generate

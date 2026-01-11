@@ -74,7 +74,7 @@ describe('AuthController (e2e)', () => {
   it('/auth/login (POST) - Fail with wrong password', () => {
     return request(app.getHttpServer() as Server)
       .post('/auth/login')
-      .send({ email: testUser.email, password: 'wrongpassword' })
+      .send({ email: testUser.email, password: 'invalid-password' })
       .expect(401);
   });
 
