@@ -92,7 +92,9 @@ describe('AuthService', () => {
 
       const result = await service.register(dto);
       expect(mockUsersService.create).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(createdUser);
+      const { password, ...expectedUser } = createdUser;
+      void password;
+      expect(result).toEqual(expectedUser);
     });
   });
 });
