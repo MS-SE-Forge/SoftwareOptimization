@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-misused-promises */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../src/auth/auth.service';
 import { UsersService } from '../../src/users/users.service';
@@ -7,8 +6,6 @@ import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let usersService: UsersService;
-  let jwtService: JwtService;
 
   const mockUsersService = {
     findOne: jest.fn(),
@@ -29,8 +26,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    usersService = module.get<UsersService>(UsersService);
-    jwtService = module.get<JwtService>(JwtService);
   });
 
   it('should be defined', () => {
@@ -46,18 +41,18 @@ describe('AuthService', () => {
         name: 'Test',
       };
       mockUsersService.findOne.mockResolvedValue(user);
-      jest
-        .spyOn(bcrypt, 'compare')
-        .mockImplementation(() => Promise.resolve(true));
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await service.validateUser('test@t.com', 'password');
-      expect(usersService.findOne).toHaveBeenCalledWith('test@t.com');
+      expect(mockUsersService.findOne).toHaveBeenCalledWith('test@t.com');
       expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashedPassword');
       expect(result).toEqual({ email: 'test@t.com', id: '1', name: 'Test' });
     });
 
     it('should return null if user not found', async () => {
       mockUsersService.findOne.mockResolvedValue(null);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await service.validateUser('test@t.com', 'password');
       expect(result).toBeNull();
     });
@@ -65,10 +60,9 @@ describe('AuthService', () => {
     it('should return null if password does not match', async () => {
       const user = { password: 'hashedPassword' };
       mockUsersService.findOne.mockResolvedValue(user);
-      jest
-        .spyOn(bcrypt, 'compare')
-        .mockImplementation(() => Promise.resolve(false));
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await service.validateUser('test@t.com', 'password');
       expect(result).toBeNull();
     });
@@ -81,7 +75,7 @@ describe('AuthService', () => {
       mockJwtService.sign.mockReturnValue(token);
 
       const result = await service.login(user);
-      expect(jwtService.sign).toHaveBeenCalledWith({
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
         username: 'test',
         sub: '1',
         role: 'user',
@@ -97,7 +91,7 @@ describe('AuthService', () => {
       mockUsersService.create.mockResolvedValue(createdUser);
 
       const result = await service.register(dto);
-      expect(usersService.create).toHaveBeenCalledWith(dto);
+      expect(mockUsersService.create).toHaveBeenCalledWith(dto);
       expect(result).toEqual(createdUser);
     });
   });

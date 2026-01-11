@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '../../src/users/users.service';
 import { PrismaService } from '../../src/prisma.service';
@@ -6,7 +5,6 @@ import * as bcrypt from 'bcrypt';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     user: {
@@ -27,7 +25,6 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get<UsersService>(UsersService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   it('should be defined', () => {
@@ -42,9 +39,7 @@ describe('UsersService', () => {
         name: 'Test',
       };
       const hashedPassword = 'hashed_password';
-      jest
-        .spyOn(bcrypt, 'hash')
-        .mockImplementation(() => Promise.resolve(hashedPassword) as any);
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue(hashedPassword as never);
 
       mockPrismaService.user.create.mockResolvedValue({
         ...userDto,
@@ -55,7 +50,7 @@ describe('UsersService', () => {
       const result = await service.create(userDto);
 
       expect(bcrypt.hash).toHaveBeenCalledWith('password', 10);
-      expect(prisma.user.create).toHaveBeenCalledWith({
+      expect(mockPrismaService.user.create).toHaveBeenCalledWith({
         data: { ...userDto, password: hashedPassword },
       });
       expect(result).toEqual({ ...userDto, password: hashedPassword, id: '1' });
@@ -68,7 +63,7 @@ describe('UsersService', () => {
       mockPrismaService.user.findMany.mockResolvedValue(users);
 
       const result = await service.findAll();
-      expect(prisma.user.findMany).toHaveBeenCalled();
+      expect(mockPrismaService.user.findMany).toHaveBeenCalled();
       expect(result).toEqual(users);
     });
   });
@@ -79,7 +74,7 @@ describe('UsersService', () => {
       mockPrismaService.user.findUnique.mockResolvedValue(user);
 
       const result = await service.findOne('test@test.com');
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'test@test.com' },
       });
       expect(result).toEqual(user);
@@ -92,7 +87,7 @@ describe('UsersService', () => {
       mockPrismaService.user.findUnique.mockResolvedValue(user);
 
       const result = await service.findById('1');
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: '1' },
       });
       expect(result).toEqual(user);
@@ -105,7 +100,7 @@ describe('UsersService', () => {
       mockPrismaService.user.update.mockResolvedValue(user);
 
       const result = await service.update('1', { name: 'Updated' });
-      expect(prisma.user.update).toHaveBeenCalledWith({
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
         where: { id: '1' },
         data: { name: 'Updated' },
       });
@@ -119,7 +114,9 @@ describe('UsersService', () => {
       mockPrismaService.user.delete.mockResolvedValue(user);
 
       const result = await service.remove('1');
-      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: '1' } });
+      expect(mockPrismaService.user.delete).toHaveBeenCalledWith({
+        where: { id: '1' },
+      });
       expect(result).toEqual(user);
     });
   });
