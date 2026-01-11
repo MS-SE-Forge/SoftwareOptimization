@@ -1,5 +1,6 @@
 import { Controller, Post, Request, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Prisma, User } from '@prisma/client';
 import { AuthService } from './auth.service';
 
 @ApiTags('auth')
@@ -11,18 +12,18 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User successfully logged in.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('login')
-  async login(@Request() req: any, @Body() body: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  login(@Request() req: any, @Body() body: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const user = req.user || body;
 
-    return this.authService.login(user);
+    return this.authService.login(user as Omit<User, 'password'>);
   }
 
   @ApiOperation({ summary: 'Register new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered.' })
   @Post('register')
-  async register(@Body() user: any) {
-    return this.authService.register(user);
+  register(@Body() user: any) {
+    return this.authService.register(user as Prisma.UserCreateInput);
   }
 
   @Post('logout')

@@ -43,7 +43,6 @@ describe('AuthService', () => {
       mockUsersService.findOne.mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await service.validateUser('test@t.com', 'password');
       expect(mockUsersService.findOne).toHaveBeenCalledWith('test@t.com');
       expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashedPassword');
@@ -52,7 +51,6 @@ describe('AuthService', () => {
 
     it('should return null if user not found', async () => {
       mockUsersService.findOne.mockResolvedValue(null);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await service.validateUser('test@t.com', 'password');
       expect(result).toBeNull();
     });
@@ -62,21 +60,21 @@ describe('AuthService', () => {
       mockUsersService.findOne.mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const result = await service.validateUser('test@t.com', 'password');
       expect(result).toBeNull();
     });
   });
 
   describe('login', () => {
-    it('should return access token', async () => {
-      const user = { username: 'test', id: '1', role: 'user' };
+    it('should return access token', () => {
+      const user = { email: 'test@t.com', id: '1', role: 'user' };
       const token = 'token';
       mockJwtService.sign.mockReturnValue(token);
 
-      const result = await service.login(user);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const result = service.login(user as any);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
-        username: 'test',
+        username: 'test@t.com',
         sub: '1',
         role: 'user',
       });
@@ -86,7 +84,7 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('should create a new user', async () => {
-      const dto = { email: 't@t.com' };
+      const dto = { email: 't@t.com', password: 'password', name: 'test' };
       const createdUser = { id: '1', ...dto };
       mockUsersService.create.mockResolvedValue(createdUser);
 
