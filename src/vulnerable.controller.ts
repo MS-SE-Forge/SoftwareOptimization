@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Query, Res, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import type { Response, Request } from 'express';
 import * as fs from 'fs';
 import { MongoClient } from 'mongodb';
@@ -6,6 +7,7 @@ import * as child_process from 'child_process';
 import axios from 'axios';
 import * as crypto from 'crypto';
 
+@ApiTags('vulnerable')
 @Controller('vulnerable')
 export class VulnerableController {
   private client: MongoClient;
@@ -44,6 +46,7 @@ export class VulnerableController {
     }
   }
 
+  @ApiOperation({ summary: 'NoSQL Injection vulnerable endpoint' })
   @Get('sqli') // Kept path as 'sqli' but implementing NoSQLi
   async sqli(@Query('username') username: string) {
     if (!username) return 'Provide username';
@@ -63,6 +66,7 @@ export class VulnerableController {
     }
   }
 
+  @ApiOperation({ summary: 'Reflected XSS vulnerable endpoint' })
   @Get('xss')
   xss(@Query('input') input: string) {
     // VULNERABILITY: Reflected XSS
@@ -70,6 +74,7 @@ export class VulnerableController {
     return `<html><body><h1>Hello ${input}</h1></body></html>`;
   }
 
+  @ApiOperation({ summary: 'Path Traversal vulnerable endpoint' })
   @Get('read-file')
   readFile(@Query('path') path: string) {
     // VULNERABILITY: Path Traversal
@@ -82,6 +87,7 @@ export class VulnerableController {
     }
   }
 
+  @ApiOperation({ summary: 'Command Injection vulnerable endpoint' })
   @Get('cmd-inject')
   cmdInject(@Query('cmd') cmd: string) {
     // VULNERABILITY: Command Injection
@@ -98,6 +104,7 @@ export class VulnerableController {
     });
   }
 
+  @ApiOperation({ summary: 'SSRF vulnerable endpoint' })
   @Get('ssrf')
   async ssrf(@Query('url') url: string) {
     // VULNERABILITY: SSRF
@@ -113,6 +120,7 @@ export class VulnerableController {
   }
 
   // 6. Insecure Deserialization (A08:2021-Software and Data Integrity Failures)
+  @ApiOperation({ summary: 'Insecure Deserialization vulnerable endpoint' })
   @Post('deserialize')
   deserialize(@Body('data') data: string) {
     // VULNERABILITY: Simulating unsafe deserialization (e.g. using eval)
@@ -123,6 +131,7 @@ export class VulnerableController {
   }
 
   // 7. Broken Access Control (A01:2021-Broken Access Control)
+  @ApiOperation({ summary: 'Broken Access Control vulnerable endpoint' })
   @Get('admin-data')
   getAdminData(@Req() req: Request) {
     // VULNERABILITY: No check if user is actually admin
@@ -130,6 +139,7 @@ export class VulnerableController {
   }
 
   // 8. Exposure of Sensitive Information (A05:2021-Security Misconfiguration)
+  @ApiOperation({ summary: 'Sensitive Info Exposure vulnerable endpoint' })
   @Get('error-debug')
   debugError() {
     try {
@@ -142,6 +152,7 @@ export class VulnerableController {
   }
 
   // 9. Weak Cryptography (A02:2021-Cryptographic Failures)
+  @ApiOperation({ summary: 'Weak Cryptography vulnerable endpoint' })
   @Get('weak-hash')
   weakHash(@Query('pass') pass: string) {
     // VULNERABILITY: Using weak hashing algorithm (MD5) simulation
@@ -149,6 +160,7 @@ export class VulnerableController {
   }
 
   // 10. Unvalidated Redirects (Open Redirect)
+  @ApiOperation({ summary: 'Open Redirect vulnerable endpoint' })
   @Get('redirect')
   redirect(@Query('url') url: string, @Res() res: Response) {
     // VULNERABILITY: Redirecting to arbitrary user-supplied URL
