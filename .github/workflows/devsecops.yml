@@ -284,3 +284,68 @@ jobs:
             -u "${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN}" \
             -T "$FILE" \
             "$TARGET"
+
+  container-security:
+    name: Container Security (Trivy)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker Image
+        run: docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+      
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  dast:
+    name: DAST (OWASP ZAP)
+    runs-on: ubuntu-latest
+    needs: container-security
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Run Container
+        run: |
+          docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          docker run -d -p 3000:3000 --name test-app ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          sleep 10 # Wait for app to start
+
+      - name: ZAP Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:3000'
+          # Fail on High vulnerabilities
+          fail_action: true 
+
+  iac-scan:
+    name: IaC Scan (Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: '.'
+          framework: dockerfile,secrets
+          quiet: true
+          skip_check: CKV_DOCKER_2 # Skip 'Ensure that healthcheck instructions have been added to container images' for now
+
+  alerting:
+    name: Slack Alert
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan]
+    steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: 'DevSecOps Pipeline Finished'
+          SLACK_TITLE: Pipeline Status
