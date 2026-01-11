@@ -9,7 +9,6 @@ async function bootstrap() {
     .setTitle('Software Optimization API')
     .setDescription('The Software Optimization API description')
     .setVersion('1.0')
-    .addTag('software-optimization')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
