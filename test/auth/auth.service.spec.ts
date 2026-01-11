@@ -74,7 +74,7 @@ describe('AuthService', () => {
       const token = 'token';
       mockJwtService.sign.mockReturnValue(token);
 
-      const result = service.login(user as any);
+      const result = service.login(user as unknown as any);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         username: 'test@t.com',
         sub: '1',

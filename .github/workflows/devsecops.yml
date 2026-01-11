@@ -5,7 +5,7 @@ env:
   NODE_ENV: github
   ARTIFACT_NAME: devsecops-sample
   # MongoDB for E2E (aligned with docker-compose service)
-  DATABASE_URL: mongodb://localhost:27017/software-optimization-test
+  DATABASE_URL: mongodb://localhost:27017/software-optimization-test?replicaSet=rs0
 
 on:
   push:
@@ -137,6 +137,18 @@ jobs:
     name: Merge & Check Coverage
     needs: unit-tests
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:4.4
+        options: >-
+          --replSet rs0
+          --bind_ip_all
+          --health-cmd "mongo --eval 'db.runCommand(\"ping\").ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 27017:27017
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -146,6 +158,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      
+      - name: Configure MongoDB Replica Set
+        run: |
+          docker exec ${{ job.services.mongodb.id }} mongo --eval 'try { rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27017"}]}) } catch(e) { rs.status().ok }'
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma:generate
 
@@ -165,9 +182,11 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongo:
-        image: mongo:latest
+        image: mongo:4.4
         options: >-
-          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok'"
+          --replSet rs0
+          --bind_ip_all
+          --health-cmd "mongo --eval 'db.runCommand(\"ping\").ok'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -182,6 +201,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+
+      - name: Configure MongoDB Replica Set
+        run: |
+          docker exec ${{ job.services.mongo.id }} mongo --eval 'try { rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27017"}]}) } catch(e) { rs.status().ok }'
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma:generate
       # No db:push needed for MongoDB usually with Prisma, or it's implicitly handled, 
