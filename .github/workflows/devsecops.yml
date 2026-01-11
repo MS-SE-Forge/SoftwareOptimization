@@ -357,16 +357,36 @@ jobs:
           quiet: true
           skip_check: CKV_DOCKER_2 # Skip 'Ensure that healthcheck instructions have been added to container images' for now
 
-  alerting:
-    name: Slack Alert
+  notifications:
+    name: Notifications (Teams & Email)
     runs-on: ubuntu-latest
     if: always()
     needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan]
     steps:
-      - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: 'DevSecOps Pipeline Finished'
-          SLACK_TITLE: Pipeline Status
+      - name: MS Teams Notification
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ github.token }}
+          ms-teams-webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK }}
+          notification-summary: 'DevSecOps Pipeline Finished'
+          notification-color: ${{ contains(needs.*.result, 'failure') && 'dc3545' || '28a745' }}
+          timezone: 'UTC'
+
+      - name: Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Pipeline ${{ contains(needs.*.result, 'failure') && 'FAILED' || 'SUCCESS' }}: ${{ github.repository }}"
+          body: |
+            The DevSecOps pipeline has finished.
+            
+            Repo: ${{ github.repository }}
+            Commit: ${{ github.sha }}
+            Ref: ${{ github.ref }}
+            
+            Status: ${{ contains(needs.*.result, 'failure') && 'FAILURE' || 'SUCCESS' }}
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: "DevSecOps <${{ secrets.SMTP_USERNAME }}>"
