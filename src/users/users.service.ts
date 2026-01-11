@@ -18,30 +18,30 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+    return await this.prisma.user.findMany();
   }
 
   async findOne(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    return await this.prisma.user.findUnique({
       where: { email },
     });
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    return await this.prisma.user.findUnique({
       where: { id },
     });
   }
 
   async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    return this.prisma.user.update({
+    return await this.prisma.user.update({
       where: { id },
       data,
     });
   }
 
   async remove(id: string): Promise<User> {
-    return this.prisma.user.delete({
+    return await this.prisma.user.delete({
       where: { id },
     });
   }
