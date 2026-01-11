@@ -7,6 +7,7 @@ import {
   Patch,
   Delete,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -45,16 +46,24 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Return user found by email.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
   @Get(':email')
-  findOne(@Param('email') email: string) {
-    return this.usersService.findOne(email);
+  async findOne(@Param('email') email: string) {
+    const user = await this.usersService.findOne(email);
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+    return user;
   }
 
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'Return user found by ID.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
   @Get('id/:id')
-  findById(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  async findById(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
   }
 
   @ApiOperation({ summary: 'Update user' })

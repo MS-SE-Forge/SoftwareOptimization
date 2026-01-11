@@ -21,6 +21,13 @@ describe('UsersController (e2e)', () => {
   let jwtToken: string;
   let createdUserId: string;
 
+  const uniqueId = Date.now();
+  const newUser = {
+    email: `newuser_${uniqueId}@test.com`,
+    password: 'password123',
+    name: 'Test User',
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -31,7 +38,6 @@ describe('UsersController (e2e)', () => {
     await app.init();
 
     // Clean up database
-    // validation for deleteMany requires replica set on MongoDB, so we delete manually
     const users = await prisma.user.findMany();
     for (const user of users) {
       await prisma.user.delete({ where: { id: user.id } });
@@ -54,21 +60,9 @@ describe('UsersController (e2e)', () => {
 
     const body = loginRes.body as LoginResponse;
     jwtToken = body.access_token;
-  });
 
-  afterAll(async () => {
-    await prisma.$disconnect();
-    await app.close();
-  });
-
-  const newUser = {
-    email: 'newuser@test.com',
-    password: 'password123',
-    name: 'New User',
-  };
-
-  it('/users (POST)', () => {
-    return request(app.getHttpServer() as Server)
+    // Create the user for subsequent tests
+    await request(app.getHttpServer() as Server)
       .post('/users')
       .set('Authorization', `Bearer ${jwtToken}`)
       .send(newUser)
@@ -79,6 +73,11 @@ describe('UsersController (e2e)', () => {
         expect(body.id).toBeDefined();
         createdUserId = body.id;
       });
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+    await app.close();
   });
 
   it('/users (GET)', () => {
