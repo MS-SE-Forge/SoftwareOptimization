@@ -125,7 +125,7 @@ jobs:
       - run: pnpm prisma:generate
 
       - name: Run Unit Tests
-        run: pnpm test:unit --shard=${{ matrix.shard }} --coverage
+        run: pnpm test:unit --shard=${{ matrix.shard }}/5 --coverage
 
       - name: Upload coverage shard
         uses: actions/upload-artifact@v4
