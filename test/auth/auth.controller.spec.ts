@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from '../../src/auth/auth.controller';
 import { AuthService } from '../../src/auth/auth.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let service: AuthService;
 
   const mockAuthService = {
     login: jest.fn(),
@@ -19,7 +17,6 @@ describe('AuthController', () => {
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
-    service = module.get<AuthService>(AuthService);
   });
 
   it('should be defined', () => {
@@ -34,7 +31,7 @@ describe('AuthController', () => {
       mockAuthService.login.mockResolvedValue(token);
 
       expect(await controller.login(req, {})).toEqual(token);
-      expect(service.login).toHaveBeenCalledWith(user);
+      expect(mockAuthService.login).toHaveBeenCalledWith(user);
     });
 
     it('should use body if req.user is undefined', async () => {
@@ -44,7 +41,7 @@ describe('AuthController', () => {
       mockAuthService.login.mockResolvedValue(token);
 
       expect(await controller.login(req, body)).toEqual(token);
-      expect(service.login).toHaveBeenCalledWith(body);
+      expect(mockAuthService.login).toHaveBeenCalledWith(body);
     });
   });
 
@@ -55,7 +52,7 @@ describe('AuthController', () => {
       mockAuthService.register.mockResolvedValue(result);
 
       expect(await controller.register(dto)).toEqual(result);
-      expect(service.register).toHaveBeenCalledWith(dto);
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto);
     });
   });
 

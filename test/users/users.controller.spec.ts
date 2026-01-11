@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from '../../src/users/users.controller';
 import { UsersService } from '../../src/users/users.service';
 
 describe('UsersController', () => {
   let controller: UsersController;
-  let service: UsersService;
 
   const mockUsersService = {
     create: jest.fn(),
@@ -23,7 +21,6 @@ describe('UsersController', () => {
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
-    service = module.get<UsersService>(UsersService);
   });
 
   it('should be defined', () => {
@@ -37,7 +34,7 @@ describe('UsersController', () => {
       mockUsersService.create.mockResolvedValue(result);
 
       expect(await controller.create(dto)).toEqual(result);
-      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(mockUsersService.create).toHaveBeenCalledWith(dto);
     });
   });
 
@@ -47,7 +44,7 @@ describe('UsersController', () => {
       mockUsersService.findAll.mockResolvedValue(result);
 
       expect(await controller.findAll()).toEqual(result);
-      expect(service.findAll).toHaveBeenCalled();
+      expect(mockUsersService.findAll).toHaveBeenCalled();
     });
   });
 
@@ -57,7 +54,7 @@ describe('UsersController', () => {
       mockUsersService.findOne.mockResolvedValue(result);
 
       expect(await controller.findOne('email')).toEqual(result);
-      expect(service.findOne).toHaveBeenCalledWith('email');
+      expect(mockUsersService.findOne).toHaveBeenCalledWith('email');
     });
   });
 
@@ -67,7 +64,7 @@ describe('UsersController', () => {
       mockUsersService.findById.mockResolvedValue(result);
 
       expect(await controller.findById('1')).toEqual(result);
-      expect(service.findById).toHaveBeenCalledWith('1');
+      expect(mockUsersService.findById).toHaveBeenCalledWith('1');
     });
   });
 
@@ -78,7 +75,7 @@ describe('UsersController', () => {
       mockUsersService.update.mockResolvedValue(result);
 
       expect(await controller.update('1', dto)).toEqual(result);
-      expect(service.update).toHaveBeenCalledWith('1', dto);
+      expect(mockUsersService.update).toHaveBeenCalledWith('1', dto);
     });
   });
 
@@ -88,7 +85,7 @@ describe('UsersController', () => {
       mockUsersService.remove.mockResolvedValue(result);
 
       expect(await controller.remove('1')).toEqual(result);
-      expect(service.remove).toHaveBeenCalledWith('1');
+      expect(mockUsersService.remove).toHaveBeenCalledWith('1');
     });
   });
 });
