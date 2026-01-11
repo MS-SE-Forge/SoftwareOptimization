@@ -1,0 +1,286 @@
+name: DevSecOps Pipeline test
+
+env:
+  NODE_VERSION: 20.19.5
+  NODE_ENV: github
+  ARTIFACT_NAME: devsecops-sample
+  # Postgres for E2E
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  install-deps:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm prisma:generate
+
+  build:
+    name: Build
+    needs: install-deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: pnpm build
+
+      - name: Package artifact (tgz)
+        run: |
+          mkdir -p artifact
+          tar -czf artifact/${{ env.ARTIFACT_NAME }}-${{ github.sha }}.tgz dist package.json pnpm-lock.yaml prisma
+
+      - name: Upload artifact to workflow (for later publish job)
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: artifact/*.tgz
+
+  lint:
+    name: Lint
+    needs: install-deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  spellcheck:
+    name: Spellcheck
+    needs: install-deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm spellcheck
+
+  unit-tests:
+    name: Unit Tests (Shard ${{ matrix.shard }})
+    needs: install-deps
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
+
+      - name: Run Unit Tests
+        run: pnpm test:unit --shard=${{ matrix.shard }} --coverage
+
+      - name: Upload coverage shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit-${{ matrix.shard }}
+          path: coverage
+
+  check-coverage:
+    name: Merge & Check Coverage
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Download coverage shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-unit-*
+          path: coverage_shards
+          merge-multiple: true
+
+      - name: Merge coverage + enforce thresholds
+        run: pnpm coverage:check
+
+  e2e:
+    name: E2E Tests (MongoDB)
+    needs: install-deps
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:latest
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
+      # No db:push needed for MongoDB usually with Prisma, or it's implicitly handled, 
+      # but standard 'db push' syncs indexes.
+      - run: pnpm db:push 
+      - run: pnpm test:e2e --coverage
+
+  secrets-scan:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-review:
+    name: Dependency Review (PR only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+
+  codeql:
+    name: CodeQL (SAST)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+
+  semgrep:
+    name: Semgrep (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/ci
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  deps-audit:
+    name: Dependency Audit (pnpm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod --audit-level high
+
+  # -------- Publish to Artifactory ----------
+  publish-artifact:
+    name: Publish Artifact to Artifactory
+    # publish only on main push, not on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - build
+      - lint
+      - spellcheck
+      - check-coverage
+      - e2e
+      - secrets-scan
+      - codeql
+      - semgrep
+      - deps-audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: artifact
+
+      - name: Upload to Artifactory (Generic Repo)
+        env:
+          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+          ARTIFACTORY_REPO: ${{ secrets.ARTIFACTORY_REPO }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
+        run: |
+          FILE=$(ls artifact/*.tgz | head -n 1)
+          BASENAME=$(basename "$FILE")
+
+          TARGET="${ARTIFACTORY_URL}/artifactory/${ARTIFACTORY_REPO}/${{ env.ARTIFACT_NAME }}/main/${{ github.sha }}/${BASENAME}"
+
+          echo "Uploading $FILE -> $TARGET"
+          curl -fL \
+            -u "${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN}" \
+            -T "$FILE" \
+            "$TARGET"
