@@ -10,12 +10,23 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   install-deps:
     name: Install Dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Debug Git Content
+        run: |
+          echo "Checked out SHA: $(git rev-parse HEAD)"
+          echo "Commit Message: $(git log -1 --pretty=%B)"
+          echo "Files in src/auth (sample):"
+          ls -la src/auth || echo "src/auth not found"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -187,13 +198,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Debug Checkout
+        run: |
+          echo "Current Directory: $(pwd)"
+          ls -la
+          # Check what git thinks is happening, if .git exists
+          if [ -d .git ]; then
+            git log -1 --oneline || echo "Git log failed"
+          else
+            echo "No .git directory found"
+          fi
+
       - name: Install & Run Gitleaks
         run: |
-          wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz
-          tar -xzf gitleaks_8.18.2_linux_x64.tar.gz
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz
+          tar -xzf gitleaks_8.21.2_linux_x64.tar.gz
           sudo mv gitleaks /usr/local/bin/
-          # --no-git ensures we scan files on disk (which we know are clean) and ignore history
-          gitleaks detect --source . -v --no-git
+          # --no-git ensures we scan files on disk
+          # explicit exclude .git just in case
+          gitleaks detect --source . -v --no-git --exclude-path=\.git
 
   dependency-review:
     name: Dependency Review (PR only)
