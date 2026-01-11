@@ -4,8 +4,8 @@ env:
   NODE_VERSION: 20.19.5
   NODE_ENV: github
   ARTIFACT_NAME: devsecops-sample
-  # Postgres for E2E
-  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+  # MongoDB for E2E (aligned with docker-compose service)
+  DATABASE_URL: mongodb://localhost:27017/software-optimization-test
 
 on:
   push:
