@@ -3,13 +3,9 @@ import {
   Post,
   Request,
   Body,
-  UseGuards,
-  Get,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-// import { LocalAuthGuard } from './local-auth.guard'; // Unused
 
 @ApiTags('auth')
 @Controller('auth')
@@ -30,15 +26,6 @@ export class AuthController {
   @Post('register')
   async register(@Body() user: any) {
     return this.authService.register(user);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Get('profile')
-  @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Return current user profile.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  getProfile(@Request() req: any) {
-    return req.user;
   }
 
   @Post('logout')
