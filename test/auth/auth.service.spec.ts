@@ -4,6 +4,8 @@ import { UsersService } from '../../src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
+jest.mock('bcrypt');
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -17,6 +19,7 @@ describe('AuthService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -41,7 +44,7 @@ describe('AuthService', () => {
         name: 'Test',
       };
       mockUsersService.findOne.mockResolvedValue(user);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.validateUser('test@t.com', 'password');
       expect(mockUsersService.findOne).toHaveBeenCalledWith('test@t.com');
@@ -58,7 +61,7 @@ describe('AuthService', () => {
     it('should return null if password does not match', async () => {
       const user = { password: 'hashedPassword' };
       mockUsersService.findOne.mockResolvedValue(user);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const result = await service.validateUser('test@t.com', 'password');
       expect(result).toBeNull();
