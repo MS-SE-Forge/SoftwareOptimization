@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { Prisma } from '@prisma/client';
@@ -31,5 +39,30 @@ export class UsersController {
   @Get(':email')
   findOne(@Param('email') email: string) {
     return this.usersService.findOne(email);
+  }
+
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiResponse({ status: 200, description: 'Return user found by ID.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Get('id/:id')
+  findById(@Param('id') id: string) {
+    return this.usersService.findById(id);
+  }
+
+  @ApiOperation({ summary: 'Update user' })
+  @ApiResponse({ status: 200, description: 'User successfully updated.' })
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updateUserDto: Prisma.UserUpdateInput,
+  ) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  @ApiOperation({ summary: 'Delete user' })
+  @ApiResponse({ status: 200, description: 'User successfully deleted.' })
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
   }
 }

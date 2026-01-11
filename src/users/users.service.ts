@@ -32,4 +32,17 @@ export class UsersService {
       where: { id },
     });
   }
+
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async remove(id: string): Promise<User> {
+    return this.prisma.user.delete({
+      where: { id },
+    });
+  }
 }
