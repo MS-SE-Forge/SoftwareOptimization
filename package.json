@@ -22,7 +22,14 @@
     "spellcheck": "cspell \"{src,apps,libs,test}/**/*.ts\"",
     "prisma:generate": "prisma generate",
     "db:push": "prisma db push",
-    "coverage:check": "jest --coverage --coverageThreshold='{\"global\":{\"branches\":80,\"functions\":80,\"lines\":80,\"statements\":80}}'"
+    "coverage:check": "jest --coverage --coverageThreshold='{\"global\":{\"branches\":80,\"functions\":80,\"lines\":80,\"statements\":80}}'",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -60,7 +67,9 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
+    "husky": "^9.1.7",
     "jest": "^30.0.0",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.4.2",
     "prisma": "^6.0.0",
     "source-map-support": "^0.5.21",
