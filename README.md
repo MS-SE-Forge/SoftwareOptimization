@@ -90,6 +90,8 @@ The GitHub Actions pipeline (`.github/workflows/devsecops.yml`) requires the fol
 | `ARTIFACTORY_TOKEN` | API Token or Password |
 | `SEMGREP_APP_TOKEN` | Token for Semgrep cloud (optional if local config) |
 | `TEAMS_WEBHOOK` | Webhook URL for Microsoft Teams channel |
+| `SMTP_SERVER` | SMTP Server Host (e.g. smtp.gmail.com) |
+| `SMTP_PORT` | SMTP Server Port (e.g. 465) |
 | `EMAIL_USERNAME` | SMTP Username/Email |
 | `EMAIL_PASSWORD` | SMTP Password/App Password |
 | `EMAIL_TO` | Recipient email address(es) |
