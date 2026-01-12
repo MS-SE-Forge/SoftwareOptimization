@@ -337,6 +337,7 @@ jobs:
           docker run -d -p 3000:3000 --name test-app ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
           echo "Waiting for application to start..."
           sleep 30 # Increased wait time ensures app is fully ready
+          docker logs test-app
           
       - name: Prep ZAP Permissions
         run: chmod -R 777 .
