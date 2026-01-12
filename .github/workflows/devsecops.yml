@@ -441,27 +441,54 @@ jobs:
           REPO="${{ github.repository }}"
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          # Construct JSON Payload (MessageCard)
+          # Construct JSON Payload (Adaptive Card)
+          # Note: Power Automate Workflows often wrap the content in a root object or expect specific schema.
+          # We will send a standard Adaptive Card wrapped in a "attachments" array if targeting a bot, 
+          # BUT for Incoming Webhook / Workflow, usually just the card content or a specific wrapper is needed.
+          # Standard Incoming Webhook expects: { "type": "message", "attachments": [ { "contentType": "application/vnd.microsoft.card.adaptive", "content": { ... } } ] }
+          # However, raw Power Automate trigger might just expect the JSON body you define in the flow.
+          # Safest bet for "Workflows" (Power Automate) that replaced Incoming Webhook is to send the Adaptive Card defined in the workflow request body schema.
+          # Assuming standard "Post card in chat or channel" action consumption:
+          
           cat <<EOF > payload.json
           {
-            "@type": "MessageCard",
-            "@context": "http://schema.org/extensions",
-            "themeColor": "$COLOR",
-            "summary": "DevSecOps Pipeline Finished",
-            "sections": [{
-              "activityTitle": "DevSecOps Pipeline Finished - $STATUS",
-              "activitySubtitle": "$REPO",
-              "facts": [
-                { "name": "Status", "value": "$STATUS" },
-                { "name": "Commit", "value": "${{ github.sha }}" },
-                { "name": "Ref", "value": "${{ github.ref }}" }
-              ],
-              "potentialAction": [{
-                "@type": "OpenUri",
-                "name": "View Workflow Run",
-                "targets": [{ "os": "default", "uri": "$RUN_URL" }]
-              }]
-            }]
+            "type": "message",
+            "attachments": [
+              {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "content": {
+                  "type": "AdaptiveCard",
+                  "version": "1.4",
+                  "body": [
+                    {
+                      "type": "TextBlock",
+                      "text": "DevSecOps Pipeline Finished",
+                      "weight": "Bolder",
+                      "size": "Medium"
+                    },
+                    {
+                      "type": "FactSet",
+                      "facts": [
+                        { "title": "Status", "value": "$STATUS" },
+                        { "title": "Repository", "value": "$REPO" },
+                        { "title": "Ref", "value": "${{ github.ref }}" },
+                        { "title": "Commit", "value": "${{ github.sha }}" }
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "Action.OpenUrl",
+                      "title": "View Workflow Run",
+                      "url": "$RUN_URL"
+                    }
+                  ],
+                  "msteams": {
+                    "width": "Full"
+                  }
+                }
+              }
+            ]
           }
           EOF
           
