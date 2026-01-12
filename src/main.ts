@@ -37,9 +37,10 @@ async function bootstrap() {
       'Permissions-Policy',
       'geolocation=(), microphone=(), camera=()',
     );
-    // Simplified Cache-Control to 'no-cache'
-    // This forces revalidation (security) without triggering 'Non-Storable' warnings (ZAP Rule 10049).
-    res.setHeader('Cache-Control', 'no-cache');
+    // Adjusted Cache-Control to 'private, max-age=120'
+    // This enables short-term private caching to satisfy ZAP Rule 10049 (Cacheable Content)
+    // while preventing public caching of sensitive data.
+    res.setHeader('Cache-Control', 'private, max-age=120');
     next();
   });
 
