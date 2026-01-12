@@ -327,6 +327,18 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          output: 'trivy-results.txt'
+
+      - name: Display Trivy Results
+        if: always()
+        run: cat trivy-results.txt
+
+      - name: Upload Trivy Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-results.txt
 
   dast:
     name: DAST (OWASP ZAP)
@@ -367,7 +379,17 @@ jobs:
         with:
           target: 'http://localhost:3000'
           # Fail on High vulnerabilities
-          fail_action: true 
+          fail_action: true
+
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-dast-report
+          path: |
+            report_html.html
+            report_md.md
+            report_json.json 
 
   iac-scan:
     name: IaC Scan (Checkov)
@@ -386,8 +408,26 @@ jobs:
     name: Notifications (Teams & Email)
     runs-on: ubuntu-latest
     if: always()
-    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan]
+    needs: [consolidated-report, build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan]
     steps:
+      - name: Download Consolidated Report
+        uses: actions/download-artifact@v4
+        with:
+          name: consolidated-report
+          path: .
+        continue-on-error: true
+
+      - name: Read Report Content
+        id: read_report
+        run: |
+          if [ -f REPORT.md ]; then
+            echo "REPORT_CONTENT<<EOF" >> $GITHUB_ENV
+            cat REPORT.md >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "REPORT_CONTENT=Report not available." >> $GITHUB_ENV
+          fi
+
       - name: MS Teams Notification
         uses: jdcargile/ms-teams-notification@v1.4
         with:
@@ -411,13 +451,68 @@ jobs:
             Repo: ${{ github.repository }}
             Commit: ${{ github.sha }}
             Ref: ${{ github.ref }}
-            
-            Code Coverage: ${{ needs.unit-tests.outputs.coverage }}
-            
             Status: ${{ contains(needs.*.result, 'failure') && 'FAILURE' || 'SUCCESS' }}
+            
+            --- CONSOLIDATED REPORT ---
+            ${{ env.REPORT_CONTENT }}
           to: ${{ secrets.EMAIL_TO }}
           from: GitHub Actions <ci@example.com>
           secure: true
+
+  consolidated-report:
+    name: Generate Consolidated Report
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [unit-tests, container-security, dast]
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate Summary Markdown
+        run: |
+          echo "# DevSecOps Pipeline Consolidated Report" > REPORT.md
+          echo "Date: $(date)" >> REPORT.md
+          echo "" >> REPORT.md
+          
+          echo "## 1. Code Coverage" >> REPORT.md
+          if [ -f artifacts/coverage-report/coverage-summary.json ]; then
+             PCT=$(jq '.total.lines.pct' artifacts/coverage-report/coverage-summary.json)
+             echo "Total Line Coverage: **$PCT%**" >> REPORT.md
+             echo "" >> REPORT.md
+             echo "*(See 'coverage-report' artifact for full details)*" >> REPORT.md
+          else
+             echo "Coverage report not found." >> REPORT.md
+          fi
+          echo "" >> REPORT.md
+
+          echo "## 2. Container Security (Trivy)" >> REPORT.md
+          if [ -f artifacts/trivy-report/trivy-results.txt ]; then
+             echo '```' >> REPORT.md
+             cat artifacts/trivy-report/trivy-results.txt >> REPORT.md
+             echo '```' >> REPORT.md
+          else
+             echo "Trivy report not found." >> REPORT.md
+          fi
+          echo "" >> REPORT.md
+
+          echo "## 3. DAST (OWASP ZAP)" >> REPORT.md
+          if [ -f artifacts/zap-dast-report/report_md.md ]; then
+             # Remove main header from ZAP report to nest it properly
+             sed '1d' artifacts/zap-dast-report/report_md.md >> REPORT.md
+          else
+             echo "ZAP report not found." >> REPORT.md
+          fi
+          
+      - name: Upload Consolidated Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: consolidated-report
+          path: REPORT.md
+
+      - name: Publish to Job Summary
+        run: cat REPORT.md >> $GITHUB_STEP_SUMMARY
 
   ci-success:
     name: CI Pipeline Success
@@ -432,6 +527,7 @@ jobs:
       - deps-audit
       - dast
       - iac-scan
+      - consolidated-report
     runs-on: ubuntu-latest
     if: success()
     steps:
