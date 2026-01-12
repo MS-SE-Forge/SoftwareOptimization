@@ -51,7 +51,7 @@ describe('LocalStrategy', () => {
     mockAuthService.validateUser.mockResolvedValue(null);
 
     await expect(
-      strategy.validate('test@test.com', 'wrongpass'),
+      strategy.validate('test@test.com', 'invalid-password'),
     ).rejects.toThrow(UnauthorizedException);
   });
 });
