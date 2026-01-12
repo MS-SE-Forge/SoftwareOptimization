@@ -422,8 +422,12 @@ jobs:
         id: read_report
         run: |
           if [ -f REPORT.md ]; then
+            # Truncate to 2000 chars to avoid "Argument list too long"
+            REPORT_TEXT=$(head -c 2000 REPORT.md)
             echo "REPORT_CONTENT<<EOF" >> $GITHUB_ENV
-            cat REPORT.md >> $GITHUB_ENV
+            echo "$REPORT_TEXT" >> $GITHUB_ENV
+            echo "..." >> $GITHUB_ENV
+            echo "[Report Truncated]" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           else
             echo "REPORT_CONTENT=Report not available." >> $GITHUB_ENV
