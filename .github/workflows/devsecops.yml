@@ -307,7 +307,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker Image
-        run: docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+        run: |
+          docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          docker save ${{ env.ARTIFACT_NAME }}:${{ github.sha }} -o image.tar
+
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+          retention-days: 1
       
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
@@ -335,9 +344,16 @@ jobs:
           - 27017:27017
     steps:
       - uses: actions/checkout@v4
-      - name: Build & Run Container
+
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Load & Run Container
         run: |
-          docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          docker load -i image.tar
           docker run -d --network="host" -e DATABASE_URL="${{ env.DATABASE_URL }}" --name test-app ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
           echo "Waiting for application to start..."
           sleep 30 # Increased wait time ensures app is fully ready
