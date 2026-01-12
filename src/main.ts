@@ -24,15 +24,26 @@ async function bootstrap() {
         },
       },
       crossOriginResourcePolicy: { policy: 'same-site' },
+      crossOriginOpenerPolicy: { policy: 'same-origin' },
+      crossOriginEmbedderPolicy: { policy: 'require-corp' },
     }),
   );
 
-  // Add missing Permissions-Policy header
+  // Add missing Permissions-Policy & Cache-Control headers
   app.use((req: Request, res: Response, next: NextFunction) => {
+    res.removeHeader('x-powered-by');
+    res.removeHeader('X-Powered-By');
     res.setHeader(
       'Permissions-Policy',
       'geolocation=(), microphone=(), camera=()',
     );
+    res.setHeader(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate',
+    );
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     next();
   });
 
