@@ -115,16 +115,21 @@ jobs:
             FUNCS=$(jq '.total.functions.pct' coverage/coverage-summary.json)
             BRCHS=$(jq '.total.branches.pct' coverage/coverage-summary.json)
             
+            # Calculate Average
+            AVG=$(echo "scale=2; ($LINES + $STMTS + $FUNCS + $BRCHS) / 4" | bc)
+            
             echo "COV_LINES=$LINES%" >> $GITHUB_ENV
             echo "COV_STMTS=$STMTS%" >> $GITHUB_ENV
             echo "COV_FUNCS=$FUNCS%" >> $GITHUB_ENV
             echo "COV_BRCHS=$BRCHS%" >> $GITHUB_ENV
+            echo "COV_AVG=$AVG%" >> $GITHUB_ENV
             echo "COVERAGE=$LINES%" >> $GITHUB_OUTPUT # Keep output for compatibility
           else
             echo "COV_LINES=N/A" >> $GITHUB_ENV
             echo "COV_STMTS=N/A" >> $GITHUB_ENV
             echo "COV_FUNCS=N/A" >> $GITHUB_ENV
             echo "COV_BRCHS=N/A" >> $GITHUB_ENV
+            echo "COV_AVG=N/A" >> $GITHUB_ENV
             echo "COVERAGE=N/A" >> $GITHUB_OUTPUT
           fi
 
@@ -138,6 +143,7 @@ jobs:
           echo "| Statements | ${{ env.COV_STMTS }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Functions | ${{ env.COV_FUNCS }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Branches | ${{ env.COV_BRCHS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Average** | **${{ env.COV_AVG }}** |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Full coverage report available in Artifacts." >> $GITHUB_STEP_SUMMARY
 
