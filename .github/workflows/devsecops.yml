@@ -265,7 +265,7 @@ jobs:
       - build
       - lint
       - spellcheck
-      - check-coverage
+      - unit-tests
       - e2e
       - secrets-scan
       - codeql
