@@ -403,5 +403,24 @@ jobs:
             Ref: ${{ github.ref }}
             
             Status: ${{ contains(needs.*.result, 'failure') && 'FAILURE' || 'SUCCESS' }}
-          to: ${{ secrets.NOTIFICATION_EMAIL }}
-          from: "DevSecOps <${{ secrets.SMTP_USERNAME }}>"
+          to: ${{ secrets.EMAIL_TO }}
+          from: GitHub Actions <ci@example.com>
+          secure: true
+
+  ci-success:
+    name: CI Pipeline Success
+    needs: 
+      - lint
+      - spellcheck
+      - check-coverage
+      - e2e
+      - secrets-scan
+      - codeql
+      - semgrep
+      - deps-audit
+      - dast
+      - iac-scan
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - run: echo "All critical checks passed"
