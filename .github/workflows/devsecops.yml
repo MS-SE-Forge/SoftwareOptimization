@@ -380,6 +380,7 @@ jobs:
           target: 'http://localhost:3000'
           # Fail on High vulnerabilities
           fail_action: true
+          rules_file_name: 'zap_rules.tsv'
 
       - name: Upload ZAP Report
         if: always()
