@@ -110,19 +110,35 @@ jobs:
         if: always()
         run: |
           if [ -f coverage/coverage-summary.json ]; then
-            TOTAL=$(jq '.total.lines.pct' coverage/coverage-summary.json)
-            echo "COVERAGE=$TOTAL%" >> $GITHUB_OUTPUT
-            echo "COVERAGE=$TOTAL%" >> $GITHUB_ENV
+            LINES=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+            STMTS=$(jq '.total.statements.pct' coverage/coverage-summary.json)
+            FUNCS=$(jq '.total.functions.pct' coverage/coverage-summary.json)
+            BRCHS=$(jq '.total.branches.pct' coverage/coverage-summary.json)
+            
+            echo "COV_LINES=$LINES%" >> $GITHUB_ENV
+            echo "COV_STMTS=$STMTS%" >> $GITHUB_ENV
+            echo "COV_FUNCS=$FUNCS%" >> $GITHUB_ENV
+            echo "COV_BRCHS=$BRCHS%" >> $GITHUB_ENV
+            echo "COVERAGE=$LINES%" >> $GITHUB_OUTPUT # Keep output for compatibility
           else
+            echo "COV_LINES=N/A" >> $GITHUB_ENV
+            echo "COV_STMTS=N/A" >> $GITHUB_ENV
+            echo "COV_FUNCS=N/A" >> $GITHUB_ENV
+            echo "COV_BRCHS=N/A" >> $GITHUB_ENV
             echo "COVERAGE=N/A" >> $GITHUB_OUTPUT
-            echo "COVERAGE=N/A" >> $GITHUB_ENV
           fi
 
       - name: Report Coverage to Job Summary
         if: always()
         run: |
-          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "| Line Coverage | **${{ env.COVERAGE }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Lines** | **${{ env.COV_LINES }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Statements | ${{ env.COV_STMTS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Functions | ${{ env.COV_FUNCS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branches | ${{ env.COV_BRCHS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "Full coverage report available in Artifacts." >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Coverage Artifact
