@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Prisma, User } from '@prisma/client';
 import { AuthService } from './auth.service';
 
-interface RequestWithUser extends Request {
+export interface RequestWithUser extends Request {
   user?: any;
 }
 

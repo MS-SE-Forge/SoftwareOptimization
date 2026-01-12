@@ -3,6 +3,7 @@ import { AuthService } from '../../src/auth/auth.service';
 import { UsersService } from '../../src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { User } from '@prisma/client';
 
 jest.mock('bcrypt');
 
@@ -74,7 +75,7 @@ describe('AuthService', () => {
       const token = 'token';
       mockJwtService.sign.mockReturnValue(token);
 
-      const result = service.login(user as unknown as any);
+      const result = service.login(user as unknown as Omit<User, 'password'>);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         username: 'test@t.com',
         sub: '1',

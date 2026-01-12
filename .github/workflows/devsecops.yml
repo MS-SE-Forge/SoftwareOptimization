@@ -227,11 +227,11 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: javascript
-      - uses: github/codeql-action/autobuild@v3
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/autobuild@v4
+      - uses: github/codeql-action/analyze@v4
 
   semgrep:
     name: Semgrep (SAST)
@@ -434,35 +434,39 @@ jobs:
           fi
 
       - name: MS Teams Notification
-        uses: jdcargile/ms-teams-notification@v1.4
-        with:
-          github-token: ${{ github.token }}
-          ms-teams-webhook-uri: ${{ secrets.TEAMS_WEBHOOK }}
-          notification-summary: 'DevSecOps Pipeline Finished'
-          notification-color: ${{ contains(needs.*.result, 'failure') && 'dc3545' || '28a745' }}
-          timezone: 'UTC'
-
-      - name: Email Notification
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Pipeline ${{ contains(needs.*.result, 'failure') && 'FAILED' || 'SUCCESS' }}: ${{ github.repository }}"
-          body: |
-            The DevSecOps pipeline has finished.
-            
-            Repo: ${{ github.repository }}
-            Commit: ${{ github.sha }}
-            Ref: ${{ github.ref }}
-            Status: ${{ contains(needs.*.result, 'failure') && 'FAILURE' || 'SUCCESS' }}
-            
-            --- CONSOLIDATED REPORT ---
-            ${{ env.REPORT_CONTENT }}
-          to: ${{ secrets.EMAIL_TO }}
-          from: GitHub Actions <ci@example.com>
-          secure: true
+        run: |
+          # Determine Context
+          STATUS="${{ contains(needs.*.result, 'failure') && 'FAILED' || 'SUCCESS' }}"
+          COLOR="${{ contains(needs.*.result, 'failure') && 'dc3545' || '28a745' }}"
+          REPO="${{ github.repository }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          # Construct JSON Payload (MessageCard)
+          cat <<EOF > payload.json
+          {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "themeColor": "$COLOR",
+            "summary": "DevSecOps Pipeline Finished",
+            "sections": [{
+              "activityTitle": "DevSecOps Pipeline Finished - $STATUS",
+              "activitySubtitle": "$REPO",
+              "facts": [
+                { "name": "Status", "value": "$STATUS" },
+                { "name": "Commit", "value": "${{ github.sha }}" },
+                { "name": "Ref", "value": "${{ github.ref }}" }
+              ],
+              "potentialAction": [{
+                "@type": "OpenUri",
+                "name": "View Workflow Run",
+                "targets": [{ "os": "default", "uri": "$RUN_URL" }]
+              }]
+            }]
+          }
+          EOF
+          
+          # Send Notification
+          curl -H "Content-Type: application/json" -d @payload.json "${{ secrets.TEAMS_WEBHOOK }}"
 
   consolidated-report:
     name: Generate Consolidated Report

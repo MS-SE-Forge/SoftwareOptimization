@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from '../../src/auth/auth.controller';
+import {
+  AuthController,
+  RequestWithUser,
+} from '../../src/auth/auth.controller';
 import { AuthService } from '../../src/auth/auth.service';
 
 describe('AuthController', () => {
@@ -30,7 +33,9 @@ describe('AuthController', () => {
       const token = { access_token: 'token' };
       mockAuthService.login.mockReturnValue(token);
 
-      expect(controller.login(req as unknown as any)).toEqual(token);
+      expect(controller.login(req as unknown as RequestWithUser)).toEqual(
+        token,
+      );
       expect(mockAuthService.login).toHaveBeenCalledWith(user);
     });
 
@@ -48,7 +53,9 @@ describe('AuthController', () => {
       const token = { access_token: 'token' };
       mockAuthService.login.mockReturnValue(token);
 
-      expect(controller.login(req as unknown as any)).toEqual(token);
+      expect(controller.login(req as unknown as RequestWithUser)).toEqual(
+        token,
+      );
       expect(mockAuthService.login).toHaveBeenCalledWith(user);
     });
   });
