@@ -37,14 +37,9 @@ async function bootstrap() {
       'Permissions-Policy',
       'geolocation=(), microphone=(), camera=()',
     );
-    // Relaxed Cache-Control to 'no-cache' to satisfy ZAP Rule 10049 (Non-Storable Content)
-    // 'no-cache' requires the browser to revalidate with the server before using the cached copy.
-    // We remove 'no-store' to allow efficient revalidation.
-    res.setHeader(
-      'Cache-Control',
-      'private, no-cache, must-revalidate, proxy-revalidate',
-    );
-    res.setHeader('Expires', '0');
+    // Simplified Cache-Control to 'no-cache'
+    // This forces revalidation (security) without triggering 'Non-Storable' warnings (ZAP Rule 10049).
+    res.setHeader('Cache-Control', 'no-cache');
     next();
   });
 
