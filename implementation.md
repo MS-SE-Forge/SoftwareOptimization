@@ -28,6 +28,9 @@ Before any artifact is built, the code is validated for quality and static secur
     - Compiles the NestJS application (`pnpm build`).
     - Packages the `dist` folder, `package.json`, and `prisma` schema into a `.tgz` artifact.
     - Uploads the artifact to GitHub Actions storage for use in downstream jobs (Publish, CD).
+- [x] Add `publish-artifact` job to upload to a `latest` path in Artifactory <!-- id: 17 -->
+- [x] Add `:latest` tag to Docker image builds <!-- id: 18 -->
+- [x] Update notifications to mention 'Latest Updated' status <!-- id: 19 -->
 
 ### 3. Testing Strategies
 - **Unit Tests & Coverage**:
@@ -54,6 +57,10 @@ Before any artifact is built, the code is validated for quality and static secur
     - Spins up the application container using `docker load` to scan the exact image built in previous steps.
     - Scans for runtime vulnerabilities.
     - **Rule Management**: Exclusions are managed via `zap_rules.tsv`. Currently ignores rule `10049` (Non-Storable Content) to avoid false positives on non-sensitive endpoints.
+
+### 1. Versioning & Tagging
+- **SHA-based Tagging**: Every build is uniquely identified by its GitHub Commit SHA.
+- **Latest Reference**: On every successful deployment to `main`, the artifact is also uploaded to a `latest/` directory in Artifactory, and the Docker image is tagged as `:latest`. This allows downstream consumers and CD tools to always pull the most recent stable version without manual version updates.
 
 ### 7. Deployment / Publish
 - **Artifactory Upload**:

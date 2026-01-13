@@ -318,12 +318,19 @@ jobs:
           BASENAME=$(basename "$FILE")
 
           TARGET="${ARTIFACTORY_URL}/artifactory/${ARTIFACTORY_REPO}/${{ env.ARTIFACT_NAME }}/main/${{ github.sha }}/${BASENAME}"
+          TARGET_LATEST="${ARTIFACTORY_URL}/artifactory/${ARTIFACTORY_REPO}/${{ env.ARTIFACT_NAME }}/main/latest/${BASENAME}"
 
           echo "Uploading $FILE -> $TARGET"
           curl -fL \
             -u "${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN}" \
             -T "$FILE" \
             "$TARGET"
+
+          echo "Updating latest tag: $FILE -> $TARGET_LATEST"
+          curl -fL \
+            -u "${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN}" \
+            -T "$FILE" \
+            "$TARGET_LATEST"
 
   container-security:
     name: Container Security (Trivy)
@@ -333,7 +340,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker Image
         run: |
-          docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }} -t ${{ env.ARTIFACT_NAME }}:latest
           docker save ${{ env.ARTIFACT_NAME }}:${{ github.sha }} -o image.tar
 
       - name: Upload Docker Image Artifact
@@ -448,7 +455,7 @@ jobs:
           # Deployment Status Logic
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             if [[ "${{ needs.publish-artifact.result }}" == "success" ]]; then
-              DEPLOY_INFO="✅ Deployed to Artifactory"
+              DEPLOY_INFO="✅ Deployed to Artifactory (Latest Updated)"
             elif [[ "${{ needs.publish-artifact.result }}" == "failure" ]]; then
               DEPLOY_INFO="❌ Deployment Failed"
             else
