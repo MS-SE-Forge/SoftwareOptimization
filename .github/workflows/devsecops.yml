@@ -527,7 +527,7 @@ jobs:
                       "facts": [
                         { "title": "Status", "value": "$STATUS" },
                         { "title": "Repository", "value": "$REPO" },
-                        { "title": "Ref", "value": "${{ github.ref }}" },
+                        { "title": "Branch", "value": "${{ github.ref_name }}" },
                         { "title": "Commit", "value": "${{ github.sha }}" },
                         { "title": "Deployment", "value": "$DEPLOY_INFO" }
                       ]
