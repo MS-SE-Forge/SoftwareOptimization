@@ -441,7 +441,7 @@ jobs:
     name: Notifications (Teams & Email)
     runs-on: ubuntu-latest
     if: always()
-    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit, publish-artifact]
+    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit, dependency-review, publish-artifact]
     steps:
 
 
@@ -499,6 +499,7 @@ jobs:
           ICON_IAC=$(get_icon "${{ needs.iac-scan.result }}")
           ICON_SEMGREP=$(get_icon "${{ needs.semgrep.result }}")
           ICON_DEPS=$(get_icon "${{ needs.deps-audit.result }}")
+          ICON_DEP_REVIEW=$(get_icon "${{ needs.dependency-review.result }}")
           ICON_RELEASE=$(get_icon "${{ needs.publish-artifact.result }}")
 
           # Conditional Value Mapping
@@ -614,6 +615,11 @@ jobs:
                           { "type": "Column", "items": [ { "type": "TextBlock", "text": "Dependency Audit" } ], "width": "50" },
                           { "type": "Column", "items": [ { "type": "TextBlock", "text": "High" } ], "width": "25" },
                           { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_DEPS" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Dep Review (PR)" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "High" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_DEP_REVIEW" } ], "width": "25" }
                         ]},
                         { "type": "ColumnSet", "separator": true, "columns": [
                           { "type": "Column", "items": [ { "type": "TextBlock", "text": "Artifact Release" } ], "width": "50" },
