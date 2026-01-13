@@ -55,10 +55,22 @@ $ docker run -p 3000:3000 --env-file .env software-optimization-api
 
 This project enforces high code quality with multiple testing layers.
 
+### Execute Tests Locally
 ```bash
+# unit tests
+$ pnpm run test:unit
+
+# e2e tests
+$ pnpm run test:e2e
+
+# test coverage check
+$ pnpm run coverage:check
+```
+
+### Quality Metrics
 - **Unit Tests**: Coverage exceeded **91%** across lines, statements, functions, and branches.
 - **E2E Tests**: Fully automated MongoDB integration tests.
-- **Security Check Table**: Scorecard summary sent to MS Teams with job status.
+- **Reporting**: Detailed coverage tables are available in the GitHub Action Job Summary.
 
 ## DevSecOps Pipeline Configuration
 
