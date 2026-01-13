@@ -36,6 +36,9 @@ export class AuthService {
   }
 
   async register(user: Prisma.UserCreateInput) {
-    return this.usersService.create(user);
+    const newUser = await this.usersService.create(user);
+    const { password, ...result } = newUser;
+    void password;
+    return result;
   }
 }

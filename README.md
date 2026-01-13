@@ -88,8 +88,39 @@ The GitHub Actions pipeline (`.github/workflows/devsecops.yml`) requires the fol
 | `ARTIFACTORY_REPO` | Target repository key (generic) |
 | `ARTIFACTORY_USER` | Username for upload |
 | `ARTIFACTORY_TOKEN` | API Token or Password |
-| `SLACK_WEBHOOK` | Webhook URL for Slack notifications |
 | `SEMGREP_APP_TOKEN` | Token for Semgrep cloud (optional if local config) |
+| `TEAMS_WEBHOOK` | Webhook URL for Microsoft Teams channel |
+| `SMTP_SERVER` | SMTP Server Host (e.g. smtp.gmail.com) |
+| `SMTP_PORT` | SMTP Server Port (e.g. 465) |
+| `EMAIL_USERNAME` | SMTP Username/Email |
+| `EMAIL_PASSWORD` | SMTP Password/App Password |
+| `EMAIL_TO` | Recipient email address(es) |
+
+### How to Obtain Secrets
+
+**ARTIFACTORY_***:
+1. Log in to your JFrog Artifactory instance.
+2. Go to **User Profile** to get your API Token (`ARTIFACTORY_TOKEN`).
+3. Use the URL of your instance for `ARTIFACTORY_URL`.
+4. Ensure you have a "Generic" repository created (default `ARTIFACTORY_REPO` name).
+
+**SEMGREP_APP_TOKEN**:
+1. Log in to [Semgrep Cloud Platform](https://semgrep.dev/login).
+2. Go to **Settings** > **Tokens**.
+3. Create a new "Agent Token" (or "App Token").
+4. Add it as a secret to enable findings to be uploaded to the dashboard.
+
+**TEAMS_WEBHOOK**:
+1. Go to your Microsoft Teams channel.
+2. Click **... (More options)** -> **Connectors**.
+3. Search for "Incoming Webhook" and configure it.
+4. Copy the generated URL.
+
+**EMAIL_*** (Example for Gmail):
+1. Enable 2-Factor Authentication on your Google Account.
+2. Go to **App Passwords** settings.
+3. Generate a new password for "Mail".
+4. Use your email as `EMAIL_USERNAME` and this app password as `EMAIL_PASSWORD`.
 
 ## Academic Justification
 

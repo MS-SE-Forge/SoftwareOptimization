@@ -2,7 +2,6 @@
   "name": "software-optimization",
   "version": "0.0.1",
   "description": "",
-  "author": "asiwajudev <olanrewajuranda@gmail.com>",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -14,7 +13,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
-    "test:unit": "jest",
+    "test:unit": "jest --coverage --coverageReporters='json-summary' --coverageReporters='text' --coverageReporters='lcov' --coverageThreshold='{\"global\":{\"branches\":80,\"functions\":80,\"lines\":80,\"statements\":80}}'",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -41,6 +40,7 @@
     "@prisma/client": "^6.0.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "helmet": "^8.1.0",
     "mongodb": "^7.0.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -87,15 +87,17 @@
       "json",
       "ts"
     ],
-    "rootDir": "test",
-    "testRegex": ".*\\.spec\\.ts$",
+    "rootDir": ".",
+    "testRegex": "test/.*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s",
+      "!src/**/main.ts",
+      "!src/**/*.module.ts"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node"
   },
   "main": "index.js",

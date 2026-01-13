@@ -1,9 +1,10 @@
-import { Controller, Post, Request, Body } from '@nestjs/common';
+import { Controller, Post, Request, Body, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Prisma, User } from '@prisma/client';
 import { AuthService } from './auth.service';
 
-interface RequestWithUser extends Request {
+export interface RequestWithUser extends Request {
   user?: any;
 }
 
@@ -12,12 +13,13 @@ interface RequestWithUser extends Request {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @UseGuards(AuthGuard('local'))
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'User successfully logged in.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('login')
-  login(@Request() req: RequestWithUser, @Body() body: any) {
-    return this.authService.login((req.user || body) as Omit<User, 'password'>);
+  login(@Request() req: RequestWithUser) {
+    return this.authService.login(req.user as Omit<User, 'password'>);
   }
 
   @ApiOperation({ summary: 'Register new user' })
@@ -31,7 +33,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 201, description: 'User successfully logged out.' })
   logout() {
-    // In a statless JWT setup, logout is handled client-side by deleting the token.
+    // In a stateless JWT setup, logout is handled client-side by deleting the token.
     // This endpoint can be used for server-side blacklist or logging.
     return { message: 'Logout successful' };
   }

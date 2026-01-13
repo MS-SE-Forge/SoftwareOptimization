@@ -3,6 +3,9 @@ import { AuthService } from '../../src/auth/auth.service';
 import { UsersService } from '../../src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { User } from '@prisma/client';
+
+jest.mock('bcrypt');
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -17,6 +20,7 @@ describe('AuthService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -41,7 +45,7 @@ describe('AuthService', () => {
         name: 'Test',
       };
       mockUsersService.findOne.mockResolvedValue(user);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.validateUser('test@t.com', 'password');
       expect(mockUsersService.findOne).toHaveBeenCalledWith('test@t.com');
@@ -58,7 +62,7 @@ describe('AuthService', () => {
     it('should return null if password does not match', async () => {
       const user = { password: 'hashedPassword' };
       mockUsersService.findOne.mockResolvedValue(user);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const result = await service.validateUser('test@t.com', 'password');
       expect(result).toBeNull();
@@ -71,7 +75,7 @@ describe('AuthService', () => {
       const token = 'token';
       mockJwtService.sign.mockReturnValue(token);
 
-      const result = service.login(user as any);
+      const result = service.login(user as unknown as Omit<User, 'password'>);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         username: 'test@t.com',
         sub: '1',
@@ -89,7 +93,9 @@ describe('AuthService', () => {
 
       const result = await service.register(dto);
       expect(mockUsersService.create).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(createdUser);
+      const { password, ...expectedUser } = createdUser;
+      void password;
+      expect(result).toEqual(expectedUser);
     });
   });
 });

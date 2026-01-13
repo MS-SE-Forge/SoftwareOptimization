@@ -3,6 +3,8 @@ import { UsersService } from '../../src/users/users.service';
 import { PrismaService } from '../../src/prisma.service';
 import * as bcrypt from 'bcrypt';
 
+jest.mock('bcrypt');
+
 describe('UsersService', () => {
   let service: UsersService;
 
@@ -17,6 +19,7 @@ describe('UsersService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
@@ -39,7 +42,7 @@ describe('UsersService', () => {
         name: 'Test',
       };
       const hashedPassword = 'hashed_password';
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue(hashedPassword as never);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
 
       mockPrismaService.user.create.mockResolvedValue({
         ...userDto,

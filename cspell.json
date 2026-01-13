@@ -1,0 +1,15 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "newuser",
+    "testuser",
+    "devsecops",
+    "repl",
+    "trivy",
+    "checkov",
+    "zaproxy",
+    "semgrep",
+    "codeql"
+  ]
+}

@@ -4,13 +4,18 @@ env:
   NODE_VERSION: 20.19.5
   NODE_ENV: github
   ARTIFACT_NAME: devsecops-sample
-  # Postgres for E2E
-  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+  # MongoDB for E2E (aligned with docker-compose service)
+  DATABASE_URL: mongodb://localhost:27017/software-optimization-test?replicaSet=rs0
 
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   install-deps:
@@ -52,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: pnpm prisma:generate
+
       - name: Build
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
@@ -68,6 +76,85 @@ jobs:
           name: build-artifact
           path: artifact/*.tgz
 
+  unit-tests:
+    name: Unit Tests & Coverage
+    runs-on: ubuntu-latest
+    needs: build
+    outputs:
+      coverage: ${{ steps.coverage-percent.outputs.COVERAGE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm prisma:generate
+
+      - name: Run Unit Tests with Coverage
+        id: test-coverage
+        run: |
+          pnpm run test:unit --coverage
+          pnpm coverage:check # Enforce thresholds
+        continue-on-error: false # Explicitly fail if thresholds not met
+
+      - name: Extract Coverage
+        id: coverage-percent
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            LINES=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+            STMTS=$(jq '.total.statements.pct' coverage/coverage-summary.json)
+            FUNCS=$(jq '.total.functions.pct' coverage/coverage-summary.json)
+            BRCHS=$(jq '.total.branches.pct' coverage/coverage-summary.json)
+            
+            # Calculate Average
+            AVG=$(echo "scale=2; ($LINES + $STMTS + $FUNCS + $BRCHS) / 4" | bc)
+            
+            echo "COV_LINES=$LINES%" >> $GITHUB_ENV
+            echo "COV_STMTS=$STMTS%" >> $GITHUB_ENV
+            echo "COV_FUNCS=$FUNCS%" >> $GITHUB_ENV
+            echo "COV_BRCHS=$BRCHS%" >> $GITHUB_ENV
+            echo "COV_AVG=$AVG%" >> $GITHUB_ENV
+            echo "COVERAGE=$LINES%" >> $GITHUB_OUTPUT # Keep output for compatibility
+          else
+            echo "COV_LINES=N/A" >> $GITHUB_ENV
+            echo "COV_STMTS=N/A" >> $GITHUB_ENV
+            echo "COV_FUNCS=N/A" >> $GITHUB_ENV
+            echo "COV_BRCHS=N/A" >> $GITHUB_ENV
+            echo "COV_AVG=N/A" >> $GITHUB_ENV
+            echo "COVERAGE=N/A" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report Coverage to Job Summary
+        if: always()
+        run: |
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Lines** | **${{ env.COV_LINES }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Statements | ${{ env.COV_STMTS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Functions | ${{ env.COV_FUNCS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branches | ${{ env.COV_BRCHS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Average** | **${{ env.COV_AVG }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Full coverage report available in Artifacts." >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
   lint:
     name: Lint
     needs: install-deps
@@ -82,6 +169,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
       - run: pnpm lint
 
   spellcheck:
@@ -100,74 +188,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm spellcheck
 
-  unit-tests:
-    name: Unit Tests (Shard ${{ matrix.shard }})
-    needs: install-deps
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm prisma:generate
 
-      - name: Run Unit Tests
-        run: pnpm test:unit --shard=${{ matrix.shard }} --coverage
-
-      - name: Upload coverage shard
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-unit-${{ matrix.shard }}
-          path: coverage
-
-  check-coverage:
-    name: Merge & Check Coverage
-    needs: unit-tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-
-      - name: Download coverage shards
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-unit-*
-          path: coverage_shards
-          merge-multiple: true
-
-      - name: Merge coverage + enforce thresholds
-        run: pnpm coverage:check
 
   e2e:
     name: E2E Tests (MongoDB)
     needs: install-deps
     runs-on: ubuntu-latest
-    services:
-      mongo:
-        image: mongo:latest
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-        ports:
-          - 27017:27017
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -177,6 +203,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+
+      - name: Start MongoDB
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:4.4 --replSet rs0 --bind_ip_all
+          sleep 10 # Wait for startup
+
+      - name: Configure MongoDB Replica Set
+        run: |
+          docker exec mongo mongo --eval 'try { rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27017"}]}) } catch(e) { rs.status().ok }'
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma:generate
       # No db:push needed for MongoDB usually with Prisma, or it's implicitly handled, 
@@ -194,6 +230,7 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   dependency-review:
     name: Dependency Review (PR only)
@@ -212,11 +249,11 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@1b168cd39490f61582a9beae412bb7057a6b2c4e # v4.31.8
         with:
           languages: javascript
-      - uses: github/codeql-action/autobuild@v3
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/autobuild@1b168cd39490f61582a9beae412bb7057a6b2c4e # v4.31.8
+      - uses: github/codeql-action/analyze@1b168cd39490f61582a9beae412bb7057a6b2c4e # v4.31.8
 
   semgrep:
     name: Semgrep (SAST)
@@ -253,12 +290,15 @@ jobs:
       - build
       - lint
       - spellcheck
-      - check-coverage
+      - unit-tests
       - e2e
       - secrets-scan
       - codeql
       - semgrep
       - deps-audit
+      - container-security
+      - dast
+      - iac-scan
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact
@@ -292,7 +332,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker Image
-        run: docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+        run: |
+          docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          docker save ${{ env.ARTIFACT_NAME }}:${{ github.sha }} -o image.tar
+
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+          retention-days: 1
       
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
@@ -303,25 +352,70 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          output: 'trivy-results.txt'
+
+      - name: Display Trivy Results
+        if: always()
+        run: cat trivy-results.txt
+
+      - name: Upload Trivy Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-results.txt
 
   dast:
     name: DAST (OWASP ZAP)
     runs-on: ubuntu-latest
     needs: container-security
+    services:
+      mongo:
+        image: mongo:latest
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 27017:27017
     steps:
       - uses: actions/checkout@v4
-      - name: Build & Run Container
+
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Load & Run Container
         run: |
-          docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
-          docker run -d -p 3000:3000 --name test-app ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
-          sleep 10 # Wait for app to start
+          docker load -i image.tar
+          docker run -d --network="host" -e DATABASE_URL="${{ env.DATABASE_URL }}" --name test-app ${{ env.ARTIFACT_NAME }}:${{ github.sha }}
+          echo "Waiting for application to start..."
+          sleep 30 # Increased wait time ensures app is fully ready
+          docker logs test-app
+          
+      - name: Prep ZAP Permissions
+        run: chmod -R 777 .
 
       - name: ZAP Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: 'http://localhost:3000'
           # Fail on High vulnerabilities
-          fail_action: true 
+          fail_action: true
+          rules_file_name: 'zap_rules.tsv'
+
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-dast-report
+          path: |
+            report_html.html
+            report_md.md
+            report_json.json 
 
   iac-scan:
     name: IaC Scan (Checkov)
@@ -336,16 +430,115 @@ jobs:
           quiet: true
           skip_check: CKV_DOCKER_2 # Skip 'Ensure that healthcheck instructions have been added to container images' for now
 
-  alerting:
-    name: Slack Alert
+  notifications:
+    name: Notifications (Teams & Email)
     runs-on: ubuntu-latest
     if: always()
-    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan]
+    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit]
     steps:
-      - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: 'DevSecOps Pipeline Finished'
-          SLACK_TITLE: Pipeline Status
+
+
+      - name: MS Teams Notification
+        run: |
+          # Determine Context
+          STATUS="${{ contains(needs.*.result, 'failure') && 'FAILED' || 'SUCCESS' }}"
+          COLOR="${{ contains(needs.*.result, 'failure') && 'dc3545' || '28a745' }}"
+          REPO="${{ github.repository }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          # Construct JSON Payload (Adaptive Card)
+          # Note: Power Automate Workflows often wrap the content in a root object or expect specific schema.
+          # We will send a standard Adaptive Card wrapped in a "attachments" array if targeting a bot, 
+          # BUT for Incoming Webhook / Workflow, usually just the card content or a specific wrapper is needed.
+          # Standard Incoming Webhook expects: { "type": "message", "attachments": [ { "contentType": "application/vnd.microsoft.card.adaptive", "content": { ... } } ] }
+          # However, raw Power Automate trigger might just expect the JSON body you define in the flow.
+          # Safest bet for "Workflows" (Power Automate) that replaced Incoming Webhook is to send the Adaptive Card defined in the workflow request body schema.
+          # Assuming standard "Post card in chat or channel" action consumption:
+          
+          cat <<EOF > payload.json
+          {
+            "type": "message",
+            "attachments": [
+              {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "content": {
+                  "type": "AdaptiveCard",
+                  "version": "1.4",
+                  "body": [
+                    {
+                      "type": "TextBlock",
+                      "text": "DevSecOps Pipeline Finished",
+                      "weight": "Bolder",
+                      "size": "Medium"
+                    },
+                    {
+                      "type": "FactSet",
+                      "facts": [
+                        { "title": "Status", "value": "$STATUS" },
+                        { "title": "Repository", "value": "$REPO" },
+                        { "title": "Ref", "value": "${{ github.ref }}" },
+                        { "title": "Commit", "value": "${{ github.sha }}" }
+                      ]
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "Job Scorecard",
+                      "weight": "Bolder",
+                      "size": "Medium",
+                      "spacing": "Large"
+                    },
+                    {
+                      "type": "FactSet",
+                      "facts": [
+                        { "title": "Lint & Spellcheck", "value": "${{ needs.lint.result == 'success' && needs.spellcheck.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Unit Tests (Cov)", "value": "${{ needs.unit-tests.result == 'success' && '✅' || '❌' }} ${{ needs.unit-tests.outputs.coverage }}" },
+                        { "title": "E2E Tests", "value": "${{ needs.e2e.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Secrets Scan", "value": "${{ needs.secrets-scan.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Container Security", "value": "${{ needs.container-security.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "DAST (ZAP)", "value": "${{ needs.dast.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "CodeQL (SAST)", "value": "${{ needs.codeql.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "IaC Scan", "value": "${{ needs.iac-scan.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Dependency Audit", "value": "${{ needs.deps-audit.result == 'success' && '✅' || '❌' }}" }
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "Action.OpenUrl",
+                      "title": "View Workflow Run",
+                      "url": "$RUN_URL"
+                    }
+                  ],
+                  "msteams": {
+                    "width": "Full"
+                  }
+                }
+              }
+            ]
+          }
+          EOF
+          
+          # Send Notification
+          curl -H "Content-Type: application/json" -d @payload.json "${{ secrets.TEAMS_WEBHOOK }}"
+
+
+
+  ci-success:
+    name: CI Pipeline Success
+    needs: 
+      - lint
+      - spellcheck
+      - unit-tests # Includes coverage check now
+      - e2e
+      - secrets-scan
+      - codeql
+      - semgrep
+      - deps-audit
+      - container-security
+      - dast
+      - iac-scan
+
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - run: echo "All critical checks passed"
