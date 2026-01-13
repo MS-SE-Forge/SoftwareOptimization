@@ -107,7 +107,7 @@ jobs:
 
       - name: Extract Coverage
         id: coverage-percent
-        if: always()
+        if: success()
         run: |
           if [ -f coverage/coverage-summary.json ]; then
             LINES=$(jq '.total.lines.pct' coverage/coverage-summary.json)
@@ -496,6 +496,13 @@ jobs:
           ICON_IAC=$(get_icon "${{ needs.iac-scan.result }}")
           ICON_DEPS=$(get_icon "${{ needs.deps-audit.result }}")
           ICON_RELEASE=$(get_icon "${{ needs.publish-artifact.result }}")
+
+          # Conditional Value Mapping
+          if [[ "${{ needs.unit-tests.result }}" == "success" ]]; then
+            UNIT_VAL="$ICON_UNIT ${{ needs.unit-tests.outputs.coverage }}"
+          else
+            UNIT_VAL="$ICON_UNIT"
+          fi
           
           # Construct JSON Payload (Adaptive Card)
           # Note: Power Automate Workflows often wrap the content in a root object or expect specific schema.
@@ -543,7 +550,7 @@ jobs:
                       "type": "FactSet",
                       "facts": [
                         { "title": "Lint & Spellcheck", "value": "$ICON_LINT" },
-                        { "title": "Unit Tests (Cov)", "value": "$ICON_UNIT ${{ needs.unit-tests.outputs.coverage }}" },
+                        { "title": "Unit Tests (Cov)", "value": "$UNIT_VAL" },
                         { "title": "E2E Tests", "value": "$ICON_E2E" },
                         { "title": "Secrets Scan", "value": "$ICON_SECRETS" },
                         { "title": "Container Security", "value": "$ICON_CONTAINER" },
