@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:3.4.0
+    image: ubuntu:14.04
     container_name: software-optimization-db
     ports:
       - "27017:27017"
