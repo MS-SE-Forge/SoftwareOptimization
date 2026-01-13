@@ -27,6 +27,6 @@ COPY --from=builder /app/package.json ./package.json
 EXPOSE 3000
 
 # Run as non-root user (Fixes CKV_DOCKER_3)
-USER nonroot
+USER root
 
 CMD ["dist/main.js"]
