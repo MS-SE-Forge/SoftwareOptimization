@@ -7,8 +7,9 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  const dummyKey = 'oRbRFt5NYCAx74a36v5MV2Fx';
-  console.log(dummyKey);
+  const key =
+    '46847d01aca6b4c8f56b0cfb5e3f87fa2a67103a0afebdd7e709f99d237a9ca4';
+  console.log(key);
   app.use(
     helmet({
       contentSecurityPolicy: {
