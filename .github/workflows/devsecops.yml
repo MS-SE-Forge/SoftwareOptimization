@@ -431,7 +431,7 @@ jobs:
     name: Notifications (Teams & Email)
     runs-on: ubuntu-latest
     if: always()
-    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan]
+    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit]
     steps:
 
 
