@@ -476,6 +476,27 @@ jobs:
                         { "title": "Ref", "value": "${{ github.ref }}" },
                         { "title": "Commit", "value": "${{ github.sha }}" }
                       ]
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "Job Scorecard",
+                      "weight": "Bolder",
+                      "size": "Medium",
+                      "spacing": "Large"
+                    },
+                    {
+                      "type": "FactSet",
+                      "facts": [
+                        { "title": "Lint & Spellcheck", "value": "${{ needs.lint.result == 'success' && needs.spellcheck.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Unit Tests (Cov)", "value": "${{ needs.unit-tests.result == 'success' && '✅' || '❌' }} ${{ needs.unit-tests.outputs.coverage }}" },
+                        { "title": "E2E Tests", "value": "${{ needs.e2e.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Secrets Scan", "value": "${{ needs.secrets-scan.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Container Security", "value": "${{ needs.container-security.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "DAST (ZAP)", "value": "${{ needs.dast.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "CodeQL (SAST)", "value": "${{ needs.codeql.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "IaC Scan", "value": "${{ needs.iac-scan.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Dependency Audit", "value": "${{ needs.deps-audit.result == 'success' && '✅' || '❌' }}" }
+                      ]
                     }
                   ],
                   "actions": [
