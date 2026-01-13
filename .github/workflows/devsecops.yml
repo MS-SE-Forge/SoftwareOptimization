@@ -447,6 +447,7 @@ jobs:
 
       - name: MS Teams Notification
         run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           # Determine Context
           if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             STATUS="CANCELLED"
@@ -534,7 +535,7 @@ jobs:
                       "facts": [
                         { "title": "Status", "value": "$STATUS" },
                         { "title": "Repository", "value": "$REPO" },
-                        { "title": "Branch", "value": "${{ github.ref_name }}" },
+                        { "title": "Branch", "value": "$BRANCH_NAME" },
                         { "title": "Commit", "value": "${{ github.sha }}" },
                         { "title": "Deployment", "value": "$DEPLOY_INFO" }
                       ]
