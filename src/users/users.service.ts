@@ -28,9 +28,10 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({
-      where: { id },
-    });
+    return (await this.prisma.$runCommandRaw({
+      find: 'User',
+      filter: { id: `${id}` },
+    })) as unknown as User;
   }
 
   async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
