@@ -1,7 +1,5 @@
 # DevSecOps Pipeline Implementation
 
-This document details the end-to-end implementation of the Secure DevOps Pipeline for the Software Optimization API. The pipeline is built using **GitHub Actions** and integrates security at every stage of the SDLC (Shift-Left Security).
-
 ## Architecture Overview
 
 The pipeline uses a parallelized, multi-stage architecture to ensure speed while enforcing strict security gates.
@@ -76,7 +74,13 @@ Before any artifact is built, the code is validated for quality and static secur
 
 - **MS Teams (Adaptive Cards)**:
   - Sends a detailed **Job Scorecard** notification using the modern `Adaptive Card` format (v1.4).
-  - Includes a status summary for every job in the pipeline and the final coverage score.
+  - **Status Intelligence**: Automatically detects `SUCCESS`, `FAILED`, and `CANCELLED` outcomes, updating the card's accent color (Green/Red/Gray) accordingly.
+  - **Granular Indicators**: Every job in the pipeline is reported with a specific icon:
+    - ✅ **Success**: Job completed successfully.
+    - ❌ **Failed**: Job encountered an error.
+    - ⏹️ **Cancelled**: Workflow was manually stopped.
+    - ⏭️ **Skipped**: Job was not required for the current run (e.g., PR checks).
+  - Includes the final Average Coverage Score and deployment status details.
   - Dispatched via a Power Automate Workflow webhook.
 
 ---

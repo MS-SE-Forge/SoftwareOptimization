@@ -448,8 +448,16 @@ jobs:
       - name: MS Teams Notification
         run: |
           # Determine Context
-          STATUS="${{ contains(needs.*.result, 'failure') && 'FAILED' || 'SUCCESS' }}"
-          COLOR="${{ contains(needs.*.result, 'failure') && 'dc3545' || '28a745' }}"
+          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            STATUS="CANCELLED"
+            COLOR="6c757d" # Gray
+          elif [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            STATUS="FAILED"
+            COLOR="dc3545" # Red
+          else
+            STATUS="SUCCESS"
+            COLOR="28a745" # Green
+          fi
           REPO="${{ github.repository }}"
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           # Deployment Status Logic
@@ -458,12 +466,36 @@ jobs:
               DEPLOY_INFO="✅ Deployed to Artifactory (Latest Updated)"
             elif [[ "${{ needs.publish-artifact.result }}" == "failure" ]]; then
               DEPLOY_INFO="❌ Deployment Failed"
+            elif [[ "${{ needs.publish-artifact.result }}" == "cancelled" ]]; then
+              DEPLOY_INFO="⏹️ Deployment Cancelled"
             else
               DEPLOY_INFO="🚫 Deployment Blocked (Check Scans)"
             fi
           else
             DEPLOY_INFO="⏭️ Deployment Skipped (PR)"
           fi
+
+          # Job Result Icon Mapping Helper
+          get_icon() {
+            case "$1" in
+              "success") echo "✅" ;;
+              "failure") echo "❌" ;;
+              "cancelled") echo "⏹️" ;;
+              "skipped") echo "⏭️" ;;
+              *) echo "❓" ;;
+            esac
+          }
+
+          ICON_LINT=$(get_icon "${{ needs.lint.result == 'success' && needs.spellcheck.result == 'success' && 'success' || ( (needs.lint.result == 'failure' || needs.spellcheck.result == 'failure') && 'failure' || ( (needs.lint.result == 'cancelled' || needs.spellcheck.result == 'cancelled') && 'cancelled' || 'skipped' ) ) }}")
+          ICON_UNIT=$(get_icon "${{ needs.unit-tests.result }}")
+          ICON_E2E=$(get_icon "${{ needs.e2e.result }}")
+          ICON_SECRETS=$(get_icon "${{ needs.secrets-scan.result }}")
+          ICON_CONTAINER=$(get_icon "${{ needs.container-security.result }}")
+          ICON_DAST=$(get_icon "${{ needs.dast.result }}")
+          ICON_CODEQL=$(get_icon "${{ needs.codeql.result }}")
+          ICON_IAC=$(get_icon "${{ needs.iac-scan.result }}")
+          ICON_DEPS=$(get_icon "${{ needs.deps-audit.result }}")
+          ICON_RELEASE=$(get_icon "${{ needs.publish-artifact.result }}")
           
           # Construct JSON Payload (Adaptive Card)
           # Note: Power Automate Workflows often wrap the content in a root object or expect specific schema.
@@ -510,16 +542,16 @@ jobs:
                     {
                       "type": "FactSet",
                       "facts": [
-                        { "title": "Lint & Spellcheck", "value": "${{ needs.lint.result == 'success' && needs.spellcheck.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "Unit Tests (Cov)", "value": "${{ needs.unit-tests.result == 'success' && '✅' || '❌' }} ${{ needs.unit-tests.outputs.coverage }}" },
-                        { "title": "E2E Tests", "value": "${{ needs.e2e.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "Secrets Scan", "value": "${{ needs.secrets-scan.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "Container Security", "value": "${{ needs.container-security.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "DAST (ZAP)", "value": "${{ needs.dast.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "CodeQL (SAST)", "value": "${{ needs.codeql.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "IaC Scan", "value": "${{ needs.iac-scan.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "Dependency Audit", "value": "${{ needs.deps-audit.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "Artifact Release", "value": "${{ needs.publish-artifact.result == 'success' && '✅' || (needs.publish-artifact.result == 'failure' && '❌' || '---') }}" }
+                        { "title": "Lint & Spellcheck", "value": "$ICON_LINT" },
+                        { "title": "Unit Tests (Cov)", "value": "$ICON_UNIT ${{ needs.unit-tests.outputs.coverage }}" },
+                        { "title": "E2E Tests", "value": "$ICON_E2E" },
+                        { "title": "Secrets Scan", "value": "$ICON_SECRETS" },
+                        { "title": "Container Security", "value": "$ICON_CONTAINER" },
+                        { "title": "DAST (ZAP)", "value": "$ICON_DAST" },
+                        { "title": "CodeQL (SAST)", "value": "$ICON_CODEQL" },
+                        { "title": "IaC Scan", "value": "$ICON_IAC" },
+                        { "title": "Dependency Audit", "value": "$ICON_DEPS" },
+                        { "title": "Artifact Release", "value": "$ICON_RELEASE" }
                       ]
                     }
                   ],
