@@ -445,7 +445,18 @@ jobs:
           COLOR="${{ contains(needs.*.result, 'failure') && 'dc3545' || '28a745' }}"
           REPO="${{ github.repository }}"
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          DEPLOY_INFO="${{ needs.publish-artifact.result == 'success' && '✅ Deployed to Artifactory' || (needs.publish-artifact.result == 'failure' && '❌ Deployment Failed' || '⏭️ Deployment Skipped (PR)') }}"
+          # Deployment Status Logic
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            if [[ "${{ needs.publish-artifact.result }}" == "success" ]]; then
+              DEPLOY_INFO="✅ Deployed to Artifactory"
+            elif [[ "${{ needs.publish-artifact.result }}" == "failure" ]]; then
+              DEPLOY_INFO="❌ Deployment Failed"
+            else
+              DEPLOY_INFO="🚫 Deployment Blocked (Check Scans)"
+            fi
+          else
+            DEPLOY_INFO="⏭️ Deployment Skipped (PR)"
+          fi
           
           # Construct JSON Payload (Adaptive Card)
           # Note: Power Automate Workflows often wrap the content in a root object or expect specific schema.
