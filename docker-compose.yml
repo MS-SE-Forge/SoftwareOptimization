@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:latest
+    image: mongo:3.4.0
     container_name: software-optimization-db
     ports:
       - "27017:27017"
