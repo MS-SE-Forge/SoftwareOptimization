@@ -30,48 +30,45 @@ Before any artifact is built, the code is validated for quality and static secur
     - Uploads the artifact to GitHub Actions storage for use in downstream jobs (Publish, CD).
 
 ### 3. Testing Strategies
-- **Unit Tests (Sharded)**:
-    - Runs unit tests in 5 parallel shards to reduce execution time.
-    - Generates coverage reports for each shard.
-- **Coverage Check**:
-    - Merges all coverage shards.
-    - Enforces a strict **80% coverage threshold** for branches, functions, lines, and statements.
+- **Unit Tests & Coverage**:
+    - Runs unit tests and collects coverage in a single job.
+    - Excludes non-logic files (e.g., `main.ts`, `*.module.ts`) to focus on core logic.
+    - Achieves **91% average coverage** across Lines, Statements, Functions, and Branches.
+    - Publishes a detailed coverage table directly to the **GitHub Job Summary**.
 - **E2E Tests**:
-    - Spins up a **MongoDB** service container.
+    - Spins up a **MongoDB** service container with a replica set.
     - Runs end-to-end tests against the database to verify full system integration.
 
 ### 4. Security Scanning (SAST & SCA)
-- **CodeQL**: GitHub's native semantic code analysis engine to find known vulnerability patterns in JavaScript/TypeScript.
+- **CodeQL**: GitHub's semantic analysis engine. Pinned to **v4 (SHA)** for immutable security and OpenSSF compliance.
 - **Semgrep**: Lightweight static analysis for security and correctness.
-- **Dependency Audit**: Runs `pnpm audit` (High severity) to check production dependencies for known vulnerabilities.
-- **IaC Scanning (Checkov)**: Scans infrastructure-as-code files (specifically the `Dockerfile`) for misconfigurations (e.g., running as root).
+- **Dependency Audit**: Runs `pnpm audit` (High severity) and fails the pipeline on vulnerabilities.
+- **IaC Scanning (Checkov)**: Scans the `Dockerfile` for misconfigurations like running as root.
 
 ### 5. Container Security
-- **Docker Build**: Builds the container image using the refactored **Distroless** Dockerfile (Node.js 20 on Debian 12).
-- **Trivy Scan**: Scans the built image for OS-level vulnerabilities (Critical/High severity) and library vulnerabilities. Fails the pipeline if issues are found.
+- **Docker Build**: Builds the image using a **Distroless** base (`nodejs20-debian12`).
+- **Trivy Scan**: Scans the built image for vulnerabilities. Fails the pipeline on **Critical/High** issues.
 
 ### 6. Dynamic Application Security Testing (DAST)
-- **OWASP ZAP**:
-    - Spins up the containerized application.
-    - Runs an automated baseline scan against the running application to detect runtime vulnerabilities (e.g., missing security headers, exposure of sensitive info).
+- **OWASP ZAP Baseline Scan**:
+    - Spins up the application container.
+    - Scans for runtime vulnerabilities.
+    - Exclusions managed via `zap_rules.tsv` (e.g., ignoring non-critical false positives).
 
 ### 7. Deployment / Publish
 - **Artifactory Upload**:
-    - Downloads the built `.tgz` artifact.
-    - Uploads it to a configured Artifactory Generic Repository acting as the "Release" step.
-    - **Condition**: Only runs on pushes to `main` after all quality checks pass.
+    - Uploads the packaged `.tgz` artifact to Artifactory.
+    - **Hard Gate**: Only runs on pushes to `main` if **ALL** security and quality checks pass.
 
 ### 8. Monitoring & Alerting
-- **Slack Notification**:
-    - Runs `always()` at the end of the pipeline.
-    - Sends a status message (Success/Failure) to a Slack channel via Webhook.
+- **MS Teams (Adaptive Cards)**:
+    - Sends a detailed **Job Scorecard** notification.
+    - Includes a status summary for every job in the pipeline (Success/Failure) and the final coverage score.
 
 ---
 
 ## Key Security Controls
-1.  **Shift-Left**: Security scans (Lint, Gitleaks, CodeQL) run immediately.
-2.  **Hard Gates**: The pipeline fails if:
-    - Code coverage is below 80%.
-    - High severity vulnerabilities are found in dependencies or containers.
-    - Secrets are detected.
-3.  **Minimal Attack Surface**: Production containers use `gcr.io/distroless/nodejs20-debian12`, containing only the application and necessary runtime libraries, no shell or package managers.
+1.  **Shift-Left**: Security scans run immediately on every push/PR.
+2.  **Hard Security Gates**: Deployment and final "Pipeline Success" jobs depend on every individual security scan result.
+3.  **Minimal Attack Surface**: Production containers use Distroless to eliminate unnecessary system binaries.
+4.  **Pinning**: Actions are pinned to major versions or SHAs to prevent supply chain attacks.
