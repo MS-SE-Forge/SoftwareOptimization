@@ -296,6 +296,9 @@ jobs:
       - codeql
       - semgrep
       - deps-audit
+      - container-security
+      - dast
+      - iac-scan
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact
@@ -531,6 +534,7 @@ jobs:
       - codeql
       - semgrep
       - deps-audit
+      - container-security
       - dast
       - iac-scan
 
