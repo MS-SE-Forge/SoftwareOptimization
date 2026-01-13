@@ -31,9 +31,6 @@ Before any artifact is built, the code is validated for quality and static secur
   - Compiles the NestJS application (`pnpm build`).
   - Packages the `dist` folder, `package.json`, and `prisma` schema into a `.tgz` artifact.
   - Uploads the artifact to GitHub Actions storage for use in downstream jobs (Publish, CD).
-- [x] Add `publish-artifact` job to upload to a `latest` path in Artifactory <!-- id: 17 -->
-- [x] Add `:latest` tag to Docker image builds <!-- id: 18 -->
-- [x] Update notifications to mention 'Latest Updated' status <!-- id: 19 -->
 
 ### 3. Testing Strategies
 
