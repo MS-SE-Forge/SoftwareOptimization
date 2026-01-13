@@ -441,7 +441,7 @@ jobs:
     name: Notifications (Teams & Email)
     runs-on: ubuntu-latest
     if: always()
-    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit, publish-artifact]
+    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit, dependency-review, publish-artifact]
     steps:
 
 
@@ -487,15 +487,19 @@ jobs:
             esac
           }
 
+          ICON_BUILD=$(get_icon "${{ needs.build.result }}")
           ICON_LINT=$(get_icon "${{ needs.lint.result == 'success' && needs.spellcheck.result == 'success' && 'success' || ( (needs.lint.result == 'failure' || needs.spellcheck.result == 'failure') && 'failure' || ( (needs.lint.result == 'cancelled' || needs.spellcheck.result == 'cancelled') && 'cancelled' || 'skipped' ) ) }}")
           ICON_UNIT=$(get_icon "${{ needs.unit-tests.result }}")
           ICON_E2E=$(get_icon "${{ needs.e2e.result }}")
           ICON_SECRETS=$(get_icon "${{ needs.secrets-scan.result }}")
           ICON_CONTAINER=$(get_icon "${{ needs.container-security.result }}")
           ICON_DAST=$(get_icon "${{ needs.dast.result }}")
+          ICON_DAST=$(get_icon "${{ needs.dast.result }}")
           ICON_CODEQL=$(get_icon "${{ needs.codeql.result }}")
           ICON_IAC=$(get_icon "${{ needs.iac-scan.result }}")
+          ICON_SEMGREP=$(get_icon "${{ needs.semgrep.result }}")
           ICON_DEPS=$(get_icon "${{ needs.deps-audit.result }}")
+          ICON_DEP_REVIEW=$(get_icon "${{ needs.dependency-review.result }}")
           ICON_RELEASE=$(get_icon "${{ needs.publish-artifact.result }}")
 
           # Conditional Value Mapping
@@ -547,19 +551,81 @@ jobs:
                       "size": "Medium",
                       "spacing": "Large"
                     },
-                    {
-                      "type": "FactSet",
-                      "facts": [
-                        { "title": "Lint & Spellcheck", "value": "$ICON_LINT" },
-                        { "title": "Unit Tests (Cov)", "value": "$UNIT_VAL" },
-                        { "title": "E2E Tests", "value": "$ICON_E2E" },
-                        { "title": "Secrets Scan", "value": "$ICON_SECRETS" },
-                        { "title": "Container Security", "value": "$ICON_CONTAINER" },
-                        { "title": "DAST (ZAP)", "value": "$ICON_DAST" },
-                        { "title": "CodeQL (SAST)", "value": "$ICON_CODEQL" },
-                        { "title": "IaC Scan", "value": "$ICON_IAC" },
-                        { "title": "Dependency Audit", "value": "$ICON_DEPS" },
-                        { "title": "Artifact Release", "value": "$ICON_RELEASE" }
+                      "type": "Container",
+                      "items": [
+                        {
+                          "type": "ColumnSet",
+                          "columns": [
+                            { "type": "Column", "items": [ { "type": "TextBlock", "text": "Job", "weight": "Bolder" } ], "width": "50" },
+                            { "type": "Column", "items": [ { "type": "TextBlock", "text": "Criticality", "weight": "Bolder" } ], "width": "25" },
+                            { "type": "Column", "items": [ { "type": "TextBlock", "text": "Status", "weight": "Bolder" } ], "width": "25" }
+                          ]
+                        },
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Build Artifact" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Critical" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_BUILD" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Lint & Spellcheck" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "High" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_LINT" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Unit Tests (Cov)" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Critical" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$UNIT_VAL" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "E2E Tests" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Critical" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_E2E" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Secrets Scan" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Critical" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_SECRETS" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Container Security" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Critical" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_CONTAINER" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "DAST (ZAP)" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Medium" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_DAST" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "CodeQL (SAST)" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "High" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_CODEQL" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Semgrep (SAST)" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "High" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_SEMGREP" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "IaC Scan" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Medium" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_IAC" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Dependency Audit" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "High" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_DEPS" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Dep Review (PR)" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "High" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_DEP_REVIEW" } ], "width": "25" }
+                        ]},
+                        { "type": "ColumnSet", "separator": true, "columns": [
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Artifact Release" } ], "width": "50" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "Info" } ], "width": "25" },
+                          { "type": "Column", "items": [ { "type": "TextBlock", "text": "$ICON_RELEASE" } ], "width": "25" }
+                        ]}
                       ]
                     }
                   ],
