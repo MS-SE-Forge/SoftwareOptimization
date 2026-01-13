@@ -434,7 +434,7 @@ jobs:
     name: Notifications (Teams & Email)
     runs-on: ubuntu-latest
     if: always()
-    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit]
+    needs: [build, lint, spellcheck, unit-tests, e2e, secrets-scan, container-security, dast, iac-scan, codeql, semgrep, deps-audit, publish-artifact]
     steps:
 
 
@@ -445,6 +445,7 @@ jobs:
           COLOR="${{ contains(needs.*.result, 'failure') && 'dc3545' || '28a745' }}"
           REPO="${{ github.repository }}"
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          DEPLOY_INFO="${{ needs.publish-artifact.result == 'success' && '✅ Deployed to Artifactory' || (needs.publish-artifact.result == 'failure' && '❌ Deployment Failed' || '⏭️ Deployment Skipped (PR)') }}"
           
           # Construct JSON Payload (Adaptive Card)
           # Note: Power Automate Workflows often wrap the content in a root object or expect specific schema.
@@ -477,7 +478,8 @@ jobs:
                         { "title": "Status", "value": "$STATUS" },
                         { "title": "Repository", "value": "$REPO" },
                         { "title": "Ref", "value": "${{ github.ref }}" },
-                        { "title": "Commit", "value": "${{ github.sha }}" }
+                        { "title": "Commit", "value": "${{ github.sha }}" },
+                        { "title": "Deployment", "value": "$DEPLOY_INFO" }
                       ]
                     },
                     {
@@ -498,7 +500,8 @@ jobs:
                         { "title": "DAST (ZAP)", "value": "${{ needs.dast.result == 'success' && '✅' || '❌' }}" },
                         { "title": "CodeQL (SAST)", "value": "${{ needs.codeql.result == 'success' && '✅' || '❌' }}" },
                         { "title": "IaC Scan", "value": "${{ needs.iac-scan.result == 'success' && '✅' || '❌' }}" },
-                        { "title": "Dependency Audit", "value": "${{ needs.deps-audit.result == 'success' && '✅' || '❌' }}" }
+                        { "title": "Dependency Audit", "value": "${{ needs.deps-audit.result == 'success' && '✅' || '❌' }}" },
+                        { "title": "Artifact Release", "value": "${{ needs.publish-artifact.result == 'success' && '✅' || (needs.publish-artifact.result == 'failure' && '❌' || '---') }}" }
                       ]
                     }
                   ],
