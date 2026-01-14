@@ -5,7 +5,11 @@
 
 ## Description
 
-This repository demonstrates a secure, optimized, and automated pipeline for a NestJS application. It implements strict DevSecOps practices including SAST, DAST, Container Security, and automated compliance checks.
+This repository demonstrates a secure, optimized, and automated pipeline for a NestJS application. It implements strict DevSecOps practices including:
+- **SAST & SCA**: CodeQL, Semgrep, Dependency Review.
+- **Container Security**: Trivy, Distroless, and **Cosign Image Signing**.
+- **DAST**: OWASP ZAP.
+- **Automated Compliance**: 16+ Quality & Security checks per build.
 
 For a detailed breakdown of the pipeline architecture, see [implementation.md](./implementation.md).
 
@@ -71,6 +75,7 @@ $ pnpm run coverage:check
 - **Unit Tests**: Coverage exceeded **91%** across lines, statements, functions, and branches.
 - **E2E Tests**: Fully automated MongoDB integration tests.
 - **Reporting**: Detailed coverage tables are available in the GitHub Action Job Summary.
+- **Notifications**: MS Teams receives a **Table-based Scorecard** reporting the status of all 16 jobs.
 
 ## DevSecOps Pipeline Configuration
 
