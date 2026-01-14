@@ -365,12 +365,36 @@ jobs:
         if: always()
         run: cat trivy-results.txt
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.4.0
+
+      - name: Sign and Verify Image Artifact (Test Case)
+        run: |
+          echo "Generating ephemeral key pair..."
+          cosign generate-key-pair
+          
+          echo "Signing image.tar..."
+          cosign sign-blob --key cosign.key image.tar > image.tar.sig
+          
+          echo "Verifying signature..."
+          cosign verify-blob --key cosign.pub --signature image.tar.sig image.tar
+          echo "✅ Signature Verification Passed"
+
       - name: Upload Trivy Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: trivy-report
           path: trivy-results.txt
+
+      - name: Upload Signature Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-signature
+          path: |
+            image.tar.sig
+            cosign.pub
 
   dast:
     name: DAST (OWASP ZAP)
