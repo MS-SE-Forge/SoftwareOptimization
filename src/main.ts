@@ -2,32 +2,31 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Request, Response, NextFunction } from 'express';
-import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
-          styleSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:'],
-          connectSrc: ["'self'"],
-          fontSrc: ["'self'"],
-          objectSrc: ["'none'"],
-          mediaSrc: ["'self'"],
-          frameSrc: ["'none'"],
-        },
-      },
-      crossOriginResourcePolicy: { policy: 'same-site' },
-      crossOriginOpenerPolicy: { policy: 'same-origin' },
-      crossOriginEmbedderPolicy: { policy: 'require-corp' },
-    }),
-  );
+  // app.use(
+  //   helmet({
+  //     contentSecurityPolicy: {
+  //       directives: {
+  //         defaultSrc: ["'self'"],
+  //         scriptSrc: ["'self'"],
+  //         styleSrc: ["'self'"],
+  //         imgSrc: ["'self'", 'data:'],
+  //         connectSrc: ["'self'"],
+  //         fontSrc: ["'self'"],
+  //         objectSrc: ["'none'"],
+  //         mediaSrc: ["'self'"],
+  //         frameSrc: ["'none'"],
+  //       },
+  //     },
+  //     crossOriginResourcePolicy: { policy: 'same-site' },
+  //     crossOriginOpenerPolicy: { policy: 'same-origin' },
+  //     crossOriginEmbedderPolicy: { policy: 'require-corp' },
+  //   }),
+  // );
 
   // Add missing Permissions-Policy & Cache-Control headers
   app.use((req: Request, res: Response, next: NextFunction) => {
