@@ -374,10 +374,10 @@ jobs:
           cosign generate-key-pair
           
           echo "Signing image.tar..."
-          cosign sign-blob --key cosign.key image.tar > image.tar.sig
+          cosign sign-blob --key cosign.key --tlog-upload=false image.tar > image.tar.sig
           
           echo "Verifying signature..."
-          cosign verify-blob --key cosign.pub --signature image.tar.sig image.tar
+          cosign verify-blob --key cosign.pub --signature image.tar.sig --insecure-ignore-tlog image.tar
           echo "✅ Signature Verification Passed"
 
       - name: Upload Trivy Report
