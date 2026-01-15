@@ -342,6 +342,8 @@ jobs:
         run: |
           docker build . -t ${{ env.ARTIFACT_NAME }}:${{ github.sha }} -t ${{ env.ARTIFACT_NAME }}:latest
           docker save ${{ env.ARTIFACT_NAME }}:${{ github.sha }} -o image.tar
+        env:
+          DOCKER_CONTENT_TRUST: 0
 
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v4
