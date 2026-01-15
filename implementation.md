@@ -52,6 +52,9 @@ Before any artifact is built, the code is validated for quality and static secur
 
 - **Docker Build**: Builds the image using a **Distroless** base (`nodejs20-debian12`).
 - **Trivy Scan**: Scans the built image for vulnerabilities. Fails the pipeline on **Critical/High** issues using `fail-on: '1'`.
+- **Image Signing Verification**:
+  - **Cosign Integration**: Uses `sigstore/cosign-installer` to verify image integrity.
+  - **Test Case**: Generates an ephemeral key pair, signs the image blob, and verifies the signature within the pipeline to ensure the signing infrastructure is functional.
 
 ### 6. Dynamic Application Security Testing (DAST)
 
@@ -74,8 +77,9 @@ Before any artifact is built, the code is validated for quality and static secur
 
 - **MS Teams (Adaptive Cards)**:
   - Sends a detailed **Job Scorecard** notification using the modern `Adaptive Card` format (v1.4).
+  - **Layout**: Features a **3-Column Table** (Job, Criticality, Status) with visual separators for high readability.
   - **Status Intelligence**: Automatically detects `SUCCESS`, `FAILED`, and `CANCELLED` outcomes, updating the card's accent color (Green/Red/Gray) accordingly.
-  - **Granular Indicators**: Every job in the pipeline is reported with a specific icon:
+  - **Granular Indicators**: Reports on **All 16 Jobs** (including `dependency-review`) with specific icons:
     - ✅ **Success**: Job completed successfully.
     - ❌ **Failed**: Job encountered an error.
     - ⏹️ **Cancelled**: Workflow was manually stopped.

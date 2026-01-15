@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:latest
+    image: alpine:3.10
     container_name: software-optimization-db
     ports:
       - "27017:27017"

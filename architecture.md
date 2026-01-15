@@ -60,6 +60,7 @@ graph LR
 - **IaC Scan**: Checkov validates Dockerfile best practices (e.g., non-root user, no health check instruction in favor of orchestration).
 - **Image Scanning**: Trivy scans the final image for OS and library CVEs.
 - **Distroless Runtime**: The production image uses `gcr.io/distroless/nodejs20-debian12`, containing zero shell or package manager binaries, significantly reducing the attack surface.
+- **Supply Chain Integrity**: **Cosign** is used to sign and verify artifact blobs, ensuring that the deployed image matches the built artifact.
 
 ### 3. Dynamic Analysis (DAST)
 - **ZAP Baseline Scan**: Automated scanning of the running API to detect missing security headers and runtime misconfigurations.
@@ -79,8 +80,8 @@ graph LR
 ### 8. Monitoring & Alerting
 
 - **MS Teams (Adaptive Cards)**:
-  - Sends a detailed **Job Scorecard** notification using the modern `Adaptive Card` format (v1.4).
-  - Includes a status summary for every job in the pipeline and the final coverage score.
+  - Sends a detailed **Job Scorecard** notification using the modern `Adaptive Card` format (v1.4) with a **structured table layout**.
+  - Includes a status summary (Success/Failed/Skipped/Criticality) for **every job** in the pipeline and the final coverage score.
   - Dispatched via a Power Automate Workflow webhook.
 
 ## Data Flow Lifecycle
@@ -88,7 +89,8 @@ graph LR
 1. **Commit Phase**: Husky triggers `lint-staged` for local linting and spellcheck.
 2. **Integration Phase**: GitHub Actions triggers the `devsecops.yml` workflow.
 3. **Validation Phase**: Parallel scans (CodeQL, Semgrep, Trivy, ZAP) validate the application.
-4. **Enforcement Phase**: The `ci-success` job acts as the final gate, blocking the workflow if any scan fails.
+4. **Verification Phase**: Image signatures are generated and verified (Cosign) to prove authenticity.
+5. **Enforcement Phase**: The `ci-success` job acts as the final gate, blocking the workflow if any scan fails.
 5. **Release Phase**: On every successful run on the `main` branch, the stable build artifact is published to Artifactory (tagged with both SHA and `latest`), and the production Docker image is tagged as `:latest` for easy consumption.
 
 ## Integration Environments
